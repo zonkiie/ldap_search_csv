@@ -1,20 +1,40 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 
 #include <ldap.h>
 
 /* Change these as needed. */
 
+//https://www.forumsys.com/tutorials/integration-how-to/ldap/online-ldap-test-server/
+//https://git.openldap.org/openldap/openldap/-/tree/master/tests/progs
 // #define HOSTNAME "localhost"
-#define HOSTNAME "db.debian.org"
+#define HOSTNAME "ldap.forumsys.com"
 
 #define PORTNUMBER LDAP_PORT
 
-#define BASEDN "dc=example,dc=com"
+#define BASEDN "ou=mathematicians,dc=example,dc=com"
 
 #define SCOPE LDAP_SCOPE_SUBTREE
 
-#define FILTER "(sn=Jensen)"
+#define FILTER "(objectClass=*)"
 // https://gist.github.com/syzdek/1459007/31d8fdf197655c8ff001c27b4c1085fb728652f9
+
+void free_cstr(char ** str)
+{
+	if(*str == NULL) return;
+	free(*str);
+	*str = NULL;
+}
+
+void reassign_cstr(char **str, const char * value)
+{
+	free_cstr(str);
+	*str = strdup(value);
+}
+
+#define _cleanup_cstr_ __attribute((cleanup(free_cstr)))
 
 int main( int argc, char **argv )
 
@@ -29,20 +49,30 @@ int main( int argc, char **argv )
 	BerElement *ber;
 
 	char *a, *dn, *matched_msg = NULL, *error_msg = NULL;
+	
+	char uri[256];
+	sprintf(uri, "ldap://%s:%d", HOSTNAME, PORTNUMBER);
 
 	char **vals, **referrals;
 
 	int version, i, rc, parse_rc, msgtype, num_entries = 0, num_refs = 0;
 
 	/* Get a handle to an LDAP connection. */
+	
+	if((rc = ldap_initialize(&ld, uri)) != LDAP_SUCCESS)
+	{
+		fprintf( stderr, "ldap_set_option: %s\n", ldap_err2string( rc ) );
 
-	if ( (ld = ldap_init( HOSTNAME, PORTNUMBER )) == NULL ) {
+		return( 1 );
+	}
+
+	/*if ( (ld = ldap_init( HOSTNAME, PORTNUMBER )) == NULL ) {
 
 		perror( "ldap_init" );
 
 		return( 1 );
 
-	}
+	}*/
 
 	version = LDAP_VERSION3;
 
@@ -52,7 +82,7 @@ int main( int argc, char **argv )
 
 		fprintf( stderr, "ldap_set_option: %s\n", ldap_err2string( rc ) );
 
-		ldap_unbind( ld );
+		ldap_unbind_ext( ld , NULL, NULL);
 
 		return( 1 );
 
@@ -61,6 +91,7 @@ int main( int argc, char **argv )
 	/* Bind to the server anonymously. */
 
 	rc = ldap_simple_bind_s( ld, NULL, NULL );
+	//rc = ldap_sasl_bind_s( ld, NULL, NULL , NULL, NULL, NULL, NULL);
 
 	if ( rc != LDAP_SUCCESS ) {
 
@@ -80,11 +111,14 @@ int main( int argc, char **argv )
 
 		}*/
 
-		ldap_unbind_s( ld );
+		ldap_unbind_ext( ld , NULL, NULL);
 
 		return( 1 );
 
 	}
+	
+	fprintf(stderr, "Bind successfull.\n");
+	fflush(stderr);
 
 	/* Perform the search operation. */
 
@@ -106,7 +140,7 @@ int main( int argc, char **argv )
 
 		}
 
-		ldap_unbind_s( ld );
+		ldap_unbind_ext( ld , NULL, NULL);
 
 		return( 1 );
 
@@ -184,7 +218,7 @@ int main( int argc, char **argv )
 
 			fprintf( stderr, "ldap_parse_result: %s\n", ldap_err2string( parse_rc ) );
 
-			ldap_unbind( ld );
+			ldap_unbind_ext( ld , NULL, NULL);
 
 			return( 1 );
 
@@ -214,7 +248,7 @@ int main( int argc, char **argv )
 
 			fprintf( stderr, "ldap_parse_result: %s\n", ldap_err2string( parse_rc ) );
 
-			ldap_unbind( ld );
+			ldap_unbind_ext( ld , NULL, NULL);
 
 			return( 1 );
 
@@ -262,7 +296,7 @@ int main( int argc, char **argv )
 
 	/* Disconnect when done. */
 
-	ldap_unbind( ld );
+	ldap_unbind_ext( ld , NULL, NULL);
 
 	return( 0 );
 
