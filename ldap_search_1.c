@@ -34,13 +34,28 @@ void reassign_cstr(char **str, const char * value)
 	*str = strdup(value);
 }
 
+void free_ldap(LDAP **ldap)
+{
+	fprintf(stderr, "Free LDAP\n");
+	if(*ldap == NULL) return;
+	ldap_unbind_ext( *ldap , NULL, NULL);
+	*ldap = NULL;
+}
+
+void free_ldap_message(LDAPMessage **message)
+{
+	if(*message == NULL) return;
+	
+}
+
 #define _cleanup_cstr_ __attribute((cleanup(free_cstr)))
+#define _cleanup_ldap_ __attribute((cleanup(free_ldap)))
 
 int main( int argc, char **argv )
 
 {
 
-	LDAP *ld;
+	_cleanup_ldap_ LDAP *ld = NULL;
 
 	LDAPMessage *res, *msg;
 
@@ -66,14 +81,6 @@ int main( int argc, char **argv )
 		return( 1 );
 	}
 
-	/*if ( (ld = ldap_init( HOSTNAME, PORTNUMBER )) == NULL ) {
-
-		perror( "ldap_init" );
-
-		return( 1 );
-
-	}*/
-
 	version = LDAP_VERSION3;
 
 	if ( ( rc = ldap_set_option( ld, LDAP_OPT_PROTOCOL_VERSION, &version ) ) != LDAP_SUCCESS ) {
@@ -82,7 +89,7 @@ int main( int argc, char **argv )
 
 		fprintf( stderr, "ldap_set_option: %s\n", ldap_err2string( rc ) );
 
-		ldap_unbind_ext( ld , NULL, NULL);
+// 		ldap_unbind_ext( ld , NULL, NULL);
 
 		return( 1 );
 
@@ -111,7 +118,7 @@ int main( int argc, char **argv )
 
 		}*/
 
-		ldap_unbind_ext( ld , NULL, NULL);
+// 		ldap_unbind_ext( ld , NULL, NULL);
 
 		return( 1 );
 
@@ -140,7 +147,7 @@ int main( int argc, char **argv )
 
 		}
 
-		ldap_unbind_ext( ld , NULL, NULL);
+// 		ldap_unbind_ext( ld , NULL, NULL);
 
 		return( 1 );
 
@@ -160,135 +167,137 @@ int main( int argc, char **argv )
 
 		switch( msgtype ) {
 
-		/* If the result was an entry found by the search, get and print the attributes and values of the entry. */
+			/* If the result was an entry found by the search, get and print the attributes and values of the entry. */
 
-		case LDAP_RES_SEARCH_ENTRY:
+			case LDAP_RES_SEARCH_ENTRY:
 
-		/* Get and print the DN of the entry. */
+				/* Get and print the DN of the entry. */
 
-		if (( dn = ldap_get_dn( ld, res )) != NULL ) {
+				if (( dn = ldap_get_dn( ld, res )) != NULL ) {
 
-			printf( "dn: %s\n", dn );
+					printf( "dn: %s\n", dn );
 
-			ldap_memfree( dn );
-
-		}
-
-		/* Iterate through each attribute in the entry. */
-
-		for ( a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
-
-			/* Get and print all values for each attribute. */
-
-			if (( vals = ldap_get_values( ld, res, a )) != NULL ) {
-
-				for ( i = 0; vals[ i ] != NULL; i++ ) {
-
-					printf( "%s: %s\n", a, vals[ i ] );
+					ldap_memfree( dn );
 
 				}
 
-				ldap_value_free( vals );
+				/* Iterate through each attribute in the entry. */
 
-			}
+				for ( a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
 
-			ldap_memfree( a );
+					/* Get and print all values for each attribute. */
 
-		}
+					if (( vals = ldap_get_values( ld, res, a )) != NULL ) {
+						//fprintf(stderr, "Count Values: %d\n", ldap_count_values(vals));
+						fprintf(stderr, "vals: %p\n", vals);
 
-		if ( ber != NULL ) {
+						for ( i = 0; vals[ i ] != NULL; i++ ) {
 
-			ber_free( ber, 0 );
+							printf( "%s: %s\n", a, vals[ i ] );
 
-		}
+						}
 
-		printf( "\n" );
+						ldap_value_free( vals );
 
-		break;
+					}
 
-		case LDAP_RES_SEARCH_REFERENCE:
+					ldap_memfree( a );
 
-		/* The server sent a search reference encountered during the search operation. */
+				}
 
-		/* Parse the result and print the search references. Ideally, rather than print them out, you would follow the references. */
+				if ( ber != NULL ) {
 
-		parse_rc = ldap_parse_reference( ld, msg, &referrals, NULL, 0 );
+					ber_free( ber, 0 );
 
-		if ( parse_rc != LDAP_SUCCESS ) {
+				}
 
-			fprintf( stderr, "ldap_parse_result: %s\n", ldap_err2string( parse_rc ) );
+				printf( "\n" );
 
-			ldap_unbind_ext( ld , NULL, NULL);
+				break;
 
-			return( 1 );
+			case LDAP_RES_SEARCH_REFERENCE:
 
-		}
+				/* The server sent a search reference encountered during the search operation. */
 
-		if ( referrals != NULL ) {
+				/* Parse the result and print the search references. Ideally, rather than print them out, you would follow the references. */
 
-			for ( i = 0; referrals[ i ] != NULL; i++ ) {
+				parse_rc = ldap_parse_reference( ld, msg, &referrals, NULL, 0 );
 
-				printf( "Search reference: %s\n\n", referrals[ i ] );
+				if ( parse_rc != LDAP_SUCCESS ) {
 
-			}
+					fprintf( stderr, "ldap_parse_result: %s\n", ldap_err2string( parse_rc ) );
 
-			ldap_value_free( referrals );
+// 					ldap_unbind_ext( ld , NULL, NULL);
 
-		}
+					return( 1 );
 
-		break;
+				}
 
-		case LDAP_RES_SEARCH_RESULT:
+				if ( referrals != NULL ) {
 
-		/* Parse the final result received from the server. Note the last argument is a non-zero value, which indicates that the LDAPMessage structure will be freed when done. (No need to call ldap_msgfree().) */
+					for ( i = 0; referrals[ i ] != NULL; i++ ) {
 
-		parse_rc = ldap_parse_result( ld, msg, &rc, &matched_msg, &error_msg, NULL, &serverctrls, 0 );
+						printf( "Search reference: %s\n\n", referrals[ i ] );
 
-		if ( parse_rc != LDAP_SUCCESS ) {
+					}
 
-			fprintf( stderr, "ldap_parse_result: %s\n", ldap_err2string( parse_rc ) );
+					ldap_value_free( referrals );
 
-			ldap_unbind_ext( ld , NULL, NULL);
+				}
 
-			return( 1 );
+				break;
 
-		}
+			case LDAP_RES_SEARCH_RESULT:
 
-		/* Check the results of the LDAP search operation. */
+				/* Parse the final result received from the server. Note the last argument is a non-zero value, which indicates that the LDAPMessage structure will be freed when done. (No need to call ldap_msgfree().) */
 
-		if ( rc != LDAP_SUCCESS ) {
+				parse_rc = ldap_parse_result( ld, msg, &rc, &matched_msg, &error_msg, NULL, &serverctrls, 0 );
 
-			fprintf( stderr, "ldap_search_ext: %s\n", ldap_err2string( rc ) );
+				if ( parse_rc != LDAP_SUCCESS ) {
 
-			if ( error_msg != NULL & *error_msg != '\0' ) {
+					fprintf( stderr, "ldap_parse_result: %s\n", ldap_err2string( parse_rc ) );
 
-				fprintf( stderr, "%s\n", error_msg );
+// 					ldap_unbind_ext( ld , NULL, NULL);
 
-			}
+					return( 1 );
 
-			if ( matched_msg != NULL && *matched_msg != '\0' ) {
+				}
 
-				fprintf( stderr, "Part of the DN that matches an existing entry: %s\n", matched_msg );
+				/* Check the results of the LDAP search operation. */
 
-			}
+				if ( rc != LDAP_SUCCESS ) {
 
-		} else {
+					fprintf( stderr, "ldap_search_ext: %s\n", ldap_err2string( rc ) );
 
-			printf( "Search completed successfully.\n"
+					if ( error_msg != NULL & *error_msg != '\0' ) {
 
-				"Entries found: %d\n"
+						fprintf( stderr, "%s\n", error_msg );
 
-				"Search references returned: %d\n",
+					}
 
-				num_entries, num_refs );
+					if ( matched_msg != NULL && *matched_msg != '\0' ) {
 
-			}
+						fprintf( stderr, "Part of the DN that matches an existing entry: %s\n", matched_msg );
 
-			break;
+					}
+
+				} else {
+
+				printf( "Search completed successfully.\n"
+
+					"Entries found: %d\n"
+
+					"Search references returned: %d\n",
+
+					num_entries, num_refs );
+
+				}
+
+				break;
 
 			default:
 
-			break;
+				break;
 
 		}
 
@@ -296,7 +305,7 @@ int main( int argc, char **argv )
 
 	/* Disconnect when done. */
 
-	ldap_unbind_ext( ld , NULL, NULL);
+// 	ldap_unbind_ext( ld , NULL, NULL);
 
 	return( 0 );
 
