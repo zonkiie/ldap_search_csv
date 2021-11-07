@@ -186,21 +186,18 @@ int main( int argc, char **argv )
 				for ( a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
 
 					/* Get and print all values for each attribute. */
-
-					if (( vals = ldap_get_values( ld, res, a )) != NULL ) {
-						//fprintf(stderr, "Count Values: %d\n", ldap_count_values(vals));
-						fprintf(stderr, "vals: %p\n", vals);
-
+					fprintf(stderr, "a: %s\n", a);
+					struct berval **vals = NULL;
+					if((vals = ldap_get_values_len(ld, res, a)) != NULL)
+					{
 						for ( i = 0; vals[ i ] != NULL; i++ ) {
 
-							printf( "%s: %s\n", a, vals[ i ] );
+							printf( "%s: %s\n", a, vals[ i ]->bv_val );
 
-						}
-
-						ldap_value_free( vals );
-
+						}	
+						ber_bvecfree(vals);
 					}
-
+					
 					ldap_memfree( a );
 
 				}
