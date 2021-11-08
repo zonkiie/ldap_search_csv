@@ -1,5 +1,5 @@
 CC := gcc
-CFLAGS := -g 
+CFLAGS := -g -std=c17 -D_GNU_SOURCE -D_XOPEN_SOURCE
 #-DLDAP_DEPRECATED
 LDFLAGS := 
 LDLIBS := -lldap -llber

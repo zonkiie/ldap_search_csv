@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <getopt.h>
+#include <malloc.h>
 
 #include <ldap.h>
 
@@ -38,40 +40,110 @@ void free_ldap(LDAP **ldap)
 {
 	fprintf(stderr, "Free LDAP\n");
 	if(*ldap == NULL) return;
-	ldap_unbind_ext( *ldap , NULL, NULL);
+	ldap_unbind_ext_s( *ldap , NULL, NULL);
 	*ldap = NULL;
 }
 
 void free_ldap_message(LDAPMessage **message)
 {
 	if(*message == NULL) return;
-	
+	ldap_msgfree(*message);
+	*message = NULL;
 }
 
 #define _cleanup_cstr_ __attribute((cleanup(free_cstr)))
 #define _cleanup_ldap_ __attribute((cleanup(free_ldap)))
+#define _cleanup_ldap_message_ __attribute((cleanup(free_ldap_message)))
 
 int main( int argc, char **argv )
-
 {
-
+	int port = LDAP_PORT, option_index = 0, c = 0;
+	// https://stackoverflow.com/questions/59462003/getopt-long-using-flag-struct-member
+	static int show_help = 0;
+	
 	_cleanup_ldap_ LDAP *ld = NULL;
 
-	LDAPMessage *res, *msg;
+	_cleanup_ldap_message_ LDAPMessage *res = NULL, *msg = NULL;
 
 	LDAPControl **serverctrls;
 
 	BerElement *ber;
+	
+	_cleanup_cstr_ char *hostname = NULL;
+	_cleanup_cstr_ char *basedn = NULL;
+	_cleanup_cstr_ char *filter = NULL;
+	_cleanup_cstr_ char *configfile = NULL;
 
 	char *a, *dn, *matched_msg = NULL, *error_msg = NULL;
 	
 	char uri[256];
-	sprintf(uri, "ldap://%s:%d", HOSTNAME, PORTNUMBER);
 
 	char **vals, **referrals;
 
-	int version, i, rc, parse_rc, msgtype, num_entries = 0, num_refs = 0;
+	int version, rc, parse_rc, msgtype, num_entries = 0, num_refs = 0;
 
+	while(1)
+	{
+		static struct option long_options[] = {
+			{"help", no_argument, &show_help, 1},
+			{"port", required_argument, 0, 0},
+			{"hostname", required_argument, 0, 0},
+			{"basedn", required_argument, 0, 0},
+			{"filter", required_argument, 0, 0},
+			{"configfile", required_argument, 0, 0},
+			{0, 0, 0, 0}
+		};
+		c = getopt_long (argc, argv, "hc:", long_options, &option_index);
+		if(c == -1) break;
+		switch(c)
+		{
+			case 0:
+			{
+				char* oname = (char*)long_options[option_index].name;
+				if(!strcmp(oname, "port")) port = atoi(optarg);
+				if(!strcmp(oname, "hostname")) hostname = strdup(optarg);
+				if(!strcmp(oname, "basedn")) basedn = strdup(optarg);
+				if(!strcmp(oname, "filter")) filter = strdup(optarg);
+				if(!strcmp(oname, "configfile")) configfile = strdup(optarg);
+				break;
+			}
+			case 1:
+			{
+				break;
+			}
+			case 'h':
+			{
+				show_help = 1;
+				break;
+			}
+			case 'c':
+			{
+				configfile = strdup(optarg);
+				break;
+			}
+			
+			default:
+				abort();
+		}
+	}
+	if(show_help)
+	{
+		puts("Command line has priority over Config file!");
+		puts("--hostname=<hostname>: connect to host <hostname>");
+		puts("--port=<port>: connect to port <port>");
+		puts("--basedn=<basedn>: use base dn <basedn>");
+		puts("--filter=<filter>: apply the filter <filter>");
+		exit(0);
+	}
+	
+	//initialize values with default values during testing
+	if(hostname == NULL) hostname = strdup(HOSTNAME);
+	if(basedn == NULL) basedn = strdup(BASEDN);
+	if(filter == NULL) filter = strdup(FILTER);
+	
+	
+	sprintf(uri, "ldap://%s:%d", hostname, port);
+	
 	/* Get a handle to an LDAP connection. */
 	
 	if((rc = ldap_initialize(&ld, uri)) != LDAP_SUCCESS)
@@ -129,7 +201,7 @@ int main( int argc, char **argv )
 
 	/* Perform the search operation. */
 
-	rc = ldap_search_ext_s( ld, BASEDN, SCOPE, FILTER, NULL, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &res );
+	rc = ldap_search_ext_s( ld, basedn, SCOPE, filter, NULL, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &res );
 
 	if ( rc != LDAP_SUCCESS ) {
 
@@ -190,9 +262,9 @@ int main( int argc, char **argv )
 					struct berval **vals = NULL;
 					if((vals = ldap_get_values_len(ld, res, a)) != NULL)
 					{
-						for ( i = 0; vals[ i ] != NULL; i++ ) {
+						for ( int vi = 0; vals[ vi ] != NULL; vi++ ) {
 
-							printf( "%s: %s\n", a, vals[ i ]->bv_val );
+							printf( "%s: %s\n", a, vals[ vi ]->bv_val );
 
 						}	
 						ber_bvecfree(vals);
@@ -232,9 +304,9 @@ int main( int argc, char **argv )
 
 				if ( referrals != NULL ) {
 
-					for ( i = 0; referrals[ i ] != NULL; i++ ) {
+					for ( int ri = 0; referrals[ ri ] != NULL; ri++ ) {
 
-						printf( "Search reference: %s\n\n", referrals[ i ] );
+						printf( "Search reference: %s\n\n", referrals[ ri ] );
 
 					}
 
