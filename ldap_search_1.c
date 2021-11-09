@@ -74,7 +74,7 @@ int main( int argc, char **argv )
 	_cleanup_cstr_ char *filter = NULL;
 	_cleanup_cstr_ char *configfile = NULL;
 
-	char *a, *dn, *matched_msg = NULL, *error_msg = NULL;
+	char *dn, *matched_msg = NULL, *error_msg = NULL;
 	
 	char uri[256];
 
@@ -161,8 +161,6 @@ int main( int argc, char **argv )
 
 		fprintf( stderr, "ldap_set_option: %s\n", ldap_err2string( rc ) );
 
-// 		ldap_unbind_ext( ld , NULL, NULL);
-
 		return( 1 );
 
 	}
@@ -190,8 +188,6 @@ int main( int argc, char **argv )
 
 		}*/
 
-// 		ldap_unbind_ext( ld , NULL, NULL);
-
 		return( 1 );
 
 	}
@@ -218,8 +214,6 @@ int main( int argc, char **argv )
 			fprintf( stderr, "Part of the DN that matches an existing entry: %s\n", matched_msg );
 
 		}
-
-// 		ldap_unbind_ext( ld , NULL, NULL);
 
 		return( 1 );
 
@@ -255,7 +249,7 @@ int main( int argc, char **argv )
 
 				/* Iterate through each attribute in the entry. */
 
-				for ( a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
+				for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
 
 					/* Get and print all values for each attribute. */
 					fprintf(stderr, "a: %s\n", a);
@@ -296,8 +290,6 @@ int main( int argc, char **argv )
 
 					fprintf( stderr, "ldap_parse_result: %s\n", ldap_err2string( parse_rc ) );
 
-// 					ldap_unbind_ext( ld , NULL, NULL);
-
 					return( 1 );
 
 				}
@@ -325,8 +317,6 @@ int main( int argc, char **argv )
 				if ( parse_rc != LDAP_SUCCESS ) {
 
 					fprintf( stderr, "ldap_parse_result: %s\n", ldap_err2string( parse_rc ) );
-
-// 					ldap_unbind_ext( ld , NULL, NULL);
 
 					return( 1 );
 
@@ -373,8 +363,6 @@ int main( int argc, char **argv )
 	}
 
 	/* Disconnect when done. */
-
-// 	ldap_unbind_ext( ld , NULL, NULL);
 
 	return( 0 );
 
