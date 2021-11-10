@@ -4,7 +4,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <malloc.h>
-
+#include <search.h>
 #include <ldap.h>
 
 /* Change these as needed. */
