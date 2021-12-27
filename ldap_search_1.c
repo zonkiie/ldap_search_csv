@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <string.h>
 #include <getopt.h>
@@ -22,6 +23,8 @@
 
 #define FILTER "(objectClass=*)"
 // https://gist.github.com/syzdek/1459007/31d8fdf197655c8ff001c27b4c1085fb728652f9
+
+#define LF "\n"
 
 void free_cstr(char ** str)
 {
@@ -51,9 +54,41 @@ void free_ldap_message(LDAPMessage **message)
 	*message = NULL;
 }
 
+int get_carr_size(char ** carr)
+{
+	if(carr == NULL) return 0;
+    int i = 0;
+    for(; carr[i] != NULL; i++);
+    return i;
+}
+
+/** Free c array strings and null memory */
+void free_carr_n(char ***carr)
+{
+    if(carr == NULL || *carr == NULL) return;
+	int size = get_carr_size(*carr);
+	for(int i = size - 1; i > 0; i--) 
+	{
+		free((*carr)[i]);
+		(*carr)[i] = NULL;
+	}
+	free(*carr);
+	*carr = NULL;
+}
+
+void free_file(FILE** file)
+{
+	if(*file == NULL) return;
+	fflush(*file);
+	fclose(*file);
+	*file = NULL;
+}
+
 #define _cleanup_cstr_ __attribute((cleanup(free_cstr)))
 #define _cleanup_ldap_ __attribute((cleanup(free_ldap)))
 #define _cleanup_ldap_message_ __attribute((cleanup(free_ldap_message)))
+#define _cleanup_file_ __attribute((cleanup(free_file)))
+#define _cleanup_carr_ __attribute((cleanup(free_carr_n)))
 
 int main( int argc, char **argv )
 {
@@ -69,10 +104,21 @@ int main( int argc, char **argv )
 
 	BerElement *ber;
 	
+	
 	_cleanup_cstr_ char *hostname = NULL;
 	_cleanup_cstr_ char *basedn = NULL;
 	_cleanup_cstr_ char *filter = NULL;
 	_cleanup_cstr_ char *configfile = NULL;
+	_cleanup_cstr_ char *delimiter = NULL;
+	_cleanup_cstr_ char *attributes = NULL;
+	
+	_cleanup_carr_ char **attributes_array = NULL;
+	
+	size_t size;
+	_cleanup_cstr_ char *buf;
+	
+	_cleanup_file_ FILE *stream = open_memstream (&buf, &size);
+	
 
 	char *dn, *matched_msg = NULL, *error_msg = NULL;
 	
@@ -90,6 +136,8 @@ int main( int argc, char **argv )
 			{"hostname", required_argument, 0, 0},
 			{"basedn", required_argument, 0, 0},
 			{"filter", required_argument, 0, 0},
+			{"delimiter", required_argument, 0, 0},
+			{"attributes", required_argument, 0, 0},
 			{"configfile", required_argument, 0, 0},
 			{0, 0, 0, 0}
 		};
@@ -104,6 +152,8 @@ int main( int argc, char **argv )
 				if(!strcmp(oname, "hostname")) hostname = strdup(optarg);
 				if(!strcmp(oname, "basedn")) basedn = strdup(optarg);
 				if(!strcmp(oname, "filter")) filter = strdup(optarg);
+				if(!strcmp(oname, "delimiter")) delimiter = strdup(optarg);
+				if(!strcmp(oname, "attributes")) attributes = strdup(optarg);
 				if(!strcmp(oname, "configfile")) configfile = strdup(optarg);
 				break;
 			}
@@ -133,6 +183,8 @@ int main( int argc, char **argv )
 		puts("--port=<port>: connect to port <port>");
 		puts("--basedn=<basedn>: use base dn <basedn>");
 		puts("--filter=<filter>: apply the filter <filter>");
+		puts("--delimiter=<delimiter>: use the delimiter <delimiter>");
+		puts("--attributes=<attributes>: csv list of queried attributes");
 		exit(0);
 	}
 	
@@ -140,6 +192,7 @@ int main( int argc, char **argv )
 	if(hostname == NULL) hostname = strdup(HOSTNAME);
 	if(basedn == NULL) basedn = strdup(BASEDN);
 	if(filter == NULL) filter = strdup(FILTER);
+	if(delimiter == NULL) delimiter = strdup("\t");
 	
 	
 	sprintf(uri, "ldap://%s:%d", hostname, port);
@@ -192,8 +245,8 @@ int main( int argc, char **argv )
 
 	}
 	
-	fprintf(stderr, "Bind successfull.\n");
-	fflush(stderr);
+	//fprintf(stderr, "Bind successfull.\n");
+	//fflush(stderr);
 
 	/* Perform the search operation. */
 
@@ -201,7 +254,7 @@ int main( int argc, char **argv )
 
 	if ( rc != LDAP_SUCCESS ) {
 
-		fprintf( stderr, "ldap_search_ext_s: %s\n", ldap_err2string( rc ) );
+		//fprintf( stderr, "ldap_search_ext_s: %s\n", ldap_err2string( rc ) );
 
 		if ( error_msg != NULL && *error_msg != '\0' ) {
 
@@ -241,7 +294,7 @@ int main( int argc, char **argv )
 
 				if (( dn = ldap_get_dn( ld, res )) != NULL ) {
 
-					printf( "dn: %s\n", dn );
+					//printf( "dn: %s\n", dn );
 
 					ldap_memfree( dn );
 
@@ -252,15 +305,20 @@ int main( int argc, char **argv )
 				for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
 
 					/* Get and print all values for each attribute. */
-					fprintf(stderr, "a: %s\n", a);
+					//fprintf(stderr, "a: %s\n", a);
 					struct berval **vals = NULL;
 					if((vals = ldap_get_values_len(ld, res, a)) != NULL)
 					{
+						bool first_in_row = true;
 						for ( int vi = 0; vals[ vi ] != NULL; vi++ ) {
 
-							printf( "%s: %s\n", a, vals[ vi ]->bv_val );
+							//printf( "%s: %s\n", a, vals[ vi ]->bv_val );
+							if(first_in_row == true) first_in_row = false;
+							else fputs(delimiter, stream);
+							fputs(vals[ vi ]->bv_val, stream);
 
-						}	
+						}
+						fputs(LF, stream);
 						ber_bvecfree(vals);
 					}
 					
@@ -274,7 +332,7 @@ int main( int argc, char **argv )
 
 				}
 
-				printf( "\n" );
+				//printf( "\n" );
 
 				break;
 
@@ -342,13 +400,13 @@ int main( int argc, char **argv )
 
 				} else {
 
-				printf( "Search completed successfully.\n"
+				/*printf( "Search completed successfully.\n"
 
 					"Entries found: %d\n"
 
 					"Search references returned: %d\n",
 
-					num_entries, num_refs );
+					num_entries, num_refs );*/
 
 				}
 
@@ -361,6 +419,8 @@ int main( int argc, char **argv )
 		}
 
 	}
+	fflush(stream);
+	puts(buf);
 
 	/* Disconnect when done. */
 
