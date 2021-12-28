@@ -306,24 +306,26 @@ int main( int argc, char **argv )
 				}
 
 				/* Iterate through each attribute in the entry. */
+				bool first_in_row = true;
 
 				for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
 
+					if(first_in_row) first_in_row = false;
+					else fputs(attribute_delimiter, stream);
 					/* Get and print all values for each attribute. */
 					//fprintf(stderr, "a: %s\n", a);
 					struct berval **vals = NULL;
 					if((vals = ldap_get_values_len(ld, res, a)) != NULL)
 					{
-						bool first_in_row = true;
+						bool first_in_array = true;
 						for ( int vi = 0; vals[ vi ] != NULL; vi++ ) {
 
 							//printf( "%s: %s\n", a, vals[ vi ]->bv_val );
-							if(first_in_row == true) first_in_row = false;
+							if(first_in_array == true) first_in_array = false;
 							else fputs(array_delimiter, stream);
 							fputs(vals[ vi ]->bv_val, stream);
 
 						}
-						fputs(attribute_delimiter, stream);
 						ber_bvecfree(vals);
 					}
 					
