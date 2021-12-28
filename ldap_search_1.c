@@ -109,7 +109,8 @@ int main( int argc, char **argv )
 	_cleanup_cstr_ char *basedn = NULL;
 	_cleanup_cstr_ char *filter = NULL;
 	_cleanup_cstr_ char *configfile = NULL;
-	_cleanup_cstr_ char *delimiter = NULL;
+	_cleanup_cstr_ char *array_delimiter = NULL;
+	_cleanup_cstr_ char *attribute_delimiter = NULL;
 	_cleanup_cstr_ char *attributes = NULL;
 	
 	_cleanup_carr_ char **attributes_array = NULL;
@@ -136,7 +137,8 @@ int main( int argc, char **argv )
 			{"hostname", required_argument, 0, 0},
 			{"basedn", required_argument, 0, 0},
 			{"filter", required_argument, 0, 0},
-			{"delimiter", required_argument, 0, 0},
+			{"array_delimiter", required_argument, 0, 0},
+			{"attribute_delimiter", required_argument, 0, 0},
 			{"attributes", required_argument, 0, 0},
 			{"configfile", required_argument, 0, 0},
 			{0, 0, 0, 0}
@@ -152,7 +154,8 @@ int main( int argc, char **argv )
 				if(!strcmp(oname, "hostname")) hostname = strdup(optarg);
 				if(!strcmp(oname, "basedn")) basedn = strdup(optarg);
 				if(!strcmp(oname, "filter")) filter = strdup(optarg);
-				if(!strcmp(oname, "delimiter")) delimiter = strdup(optarg);
+				if(!strcmp(oname, "array_delimiter")) array_delimiter = strdup(optarg);
+				if(!strcmp(oname, "attribute_delimiter")) attribute_delimiter = strdup(optarg);
 				if(!strcmp(oname, "attributes")) attributes = strdup(optarg);
 				if(!strcmp(oname, "configfile")) configfile = strdup(optarg);
 				break;
@@ -183,7 +186,8 @@ int main( int argc, char **argv )
 		puts("--port=<port>: connect to port <port>");
 		puts("--basedn=<basedn>: use base dn <basedn>");
 		puts("--filter=<filter>: apply the filter <filter>");
-		puts("--delimiter=<delimiter>: use the delimiter <delimiter>");
+		puts("--array_delimiter=<delimiter>: use the delimiter <delimiter> to separate array entries");
+		puts("--attribute_delimiter=<delimiter>: use the delimiter <delimiter> to separate attributes");
 		puts("--attributes=<attributes>: csv list of queried attributes");
 		exit(0);
 	}
@@ -192,7 +196,8 @@ int main( int argc, char **argv )
 	if(hostname == NULL) hostname = strdup(HOSTNAME);
 	if(basedn == NULL) basedn = strdup(BASEDN);
 	if(filter == NULL) filter = strdup(FILTER);
-	if(delimiter == NULL) delimiter = strdup("\t");
+	if(array_delimiter == NULL) array_delimiter = strdup("|");
+	if(attribute_delimiter == NULL) attribute_delimiter = strdup("\t");
 	
 	
 	sprintf(uri, "ldap://%s:%d", hostname, port);
@@ -314,11 +319,11 @@ int main( int argc, char **argv )
 
 							//printf( "%s: %s\n", a, vals[ vi ]->bv_val );
 							if(first_in_row == true) first_in_row = false;
-							else fputs(delimiter, stream);
+							else fputs(array_delimiter, stream);
 							fputs(vals[ vi ]->bv_val, stream);
 
 						}
-						fputs(LF, stream);
+						fputs(attribute_delimiter, stream);
 						ber_bvecfree(vals);
 					}
 					
@@ -333,6 +338,7 @@ int main( int argc, char **argv )
 				}
 
 				//printf( "\n" );
+				fputs(LF, stream);
 
 				break;
 
