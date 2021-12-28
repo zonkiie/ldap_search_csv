@@ -76,6 +76,51 @@ void free_carr_n(char ***carr)
 	*carr = NULL;
 }
 
+int init_array(char ***target_array)
+{
+	if(*target_array == NULL) *target_array = (char**)calloc(sizeof(*target_array), 1);
+	return *target_array != NULL;
+}
+
+int pushan(char ***target_array, const char *str, int num)
+{
+	if(*target_array == NULL) *target_array = (char**)calloc(sizeof(*target_array), 1);
+	int element_count = get_carr_size(*target_array);
+	(*target_array) = (char**)realloc(*target_array, sizeof(*target_array) * (element_count + 2));
+	(*target_array)[element_count] = (char*)calloc(num + 2, 1);
+	memcpy((*target_array)[element_count], str, num);
+	element_count++;
+	(*target_array)[element_count] = NULL;
+	return(element_count);
+}
+
+int supersplit(char ***target_array, char *str, char *splitstr)
+{
+	*target_array = (char**)calloc(sizeof(*target_array), 1);
+	char *cur_buf = str;
+	char *last_buf = str;
+	int len = 0;
+	int item = 0;
+	int boffset = 0;
+	int sl = strlen(splitstr);
+	while((cur_buf = strcasestr(last_buf, splitstr)))
+	{
+		if(item) boffset = 0;
+		else boffset = 1;
+		len = cur_buf - last_buf;
+		pushan(target_array, last_buf - sl + boffset, len + sl - boffset);
+		last_buf = cur_buf + sl;
+		item++;
+	}
+	
+	len = strlen(last_buf - (sl - 1));
+	item++;
+	pushan(target_array, last_buf - sl, len + sl);
+	return(item);
+}
+
+
+
 void free_file(FILE** file)
 {
 	if(*file == NULL) return;
@@ -199,6 +244,10 @@ int main( int argc, char **argv )
 	if(array_delimiter == NULL) array_delimiter = strdup("|");
 	if(attribute_delimiter == NULL) attribute_delimiter = strdup("\t");
 	
+	if(attributes)
+	{
+		supersplit(&attributes_array, attributes, ",");
+	}
 	
 	sprintf(uri, "ldap://%s:%d", hostname, port);
 	
@@ -255,7 +304,7 @@ int main( int argc, char **argv )
 
 	/* Perform the search operation. */
 
-	rc = ldap_search_ext_s( ld, basedn, SCOPE, filter, NULL, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &res );
+	rc = ldap_search_ext_s( ld, basedn, SCOPE, filter, attributes_array, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &res );
 
 	if ( rc != LDAP_SUCCESS ) {
 
