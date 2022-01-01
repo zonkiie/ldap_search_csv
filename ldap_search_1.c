@@ -26,6 +26,12 @@
 
 #define LF "\n"
 
+#define _cleanup_cstr_ __attribute((cleanup(free_cstr)))
+#define _cleanup_ldap_ __attribute((cleanup(free_ldap)))
+#define _cleanup_ldap_message_ __attribute((cleanup(free_ldap_message)))
+#define _cleanup_file_ __attribute((cleanup(free_file)))
+#define _cleanup_carr_ __attribute((cleanup(free_carr_n)))
+
 void free_cstr(char ** str)
 {
 	if(*str == NULL) return;
@@ -76,50 +82,35 @@ void free_carr_n(char ***carr)
 	*carr = NULL;
 }
 
-int init_array(char ***target_array)
+int substr_count(char *str, char *substr)
 {
-	if(*target_array == NULL) *target_array = (char**)calloc(sizeof(*target_array), 1);
-	return *target_array != NULL;
+	if(str == NULL || !strcmp(str, "")) return 0;
+	char * found = str;
+	int count = 0;
+	while(found = strstr(found + strlen(substr), substr)) count++;
+	return count;
 }
 
-int pushan(char ***target_array, const char *str, int num)
+int str_split(char ***dest, char *str, char *separator)
 {
-	if(*target_array == NULL) *target_array = (char**)calloc(sizeof(*target_array), 1);
-	int element_count = get_carr_size(*target_array);
-	(*target_array) = (char**)realloc(*target_array, sizeof(*target_array) * (element_count + 2));
-	(*target_array)[element_count] = (char*)calloc(num + 2, 1);
-	memcpy((*target_array)[element_count], str, num);
-	element_count++;
-	(*target_array)[element_count] = NULL;
-	return(element_count);
-}
-
-int supersplit(char ***target_array, char *str, char *splitstr)
-{
-	*target_array = (char**)calloc(sizeof(*target_array), 1);
-	char *cur_buf = str;
-	char *last_buf = str;
-	int len = 0;
-	int item = 0;
-	int boffset = 0;
-	int sl = strlen(splitstr);
-	while((cur_buf = strcasestr(last_buf, splitstr)))
+	int el_count = substr_count(str, separator) + 1;
+	*dest = (char**)malloc(el_count * sizeof(char*));
+	char *walker = strstr(str, separator), *trailer = str;
+	int index = 0;
+	while(true)
 	{
-		if(item) boffset = 0;
-		else boffset = 1;
-		len = cur_buf - last_buf;
-		pushan(target_array, last_buf - sl + boffset, len + sl - boffset);
-		last_buf = cur_buf + sl;
-		item++;
+		if(walker == NULL)
+		{
+			(*dest)[index++] = strdup(trailer);
+			break;
+		}
+		int length = walker - trailer;
+		(*dest)[index++] = strndup(trailer, length);
+		trailer = walker + strlen(separator);
+		walker = strstr(trailer, separator);
 	}
-	
-	len = strlen(last_buf - (sl - 1));
-	item++;
-	pushan(target_array, last_buf - sl, len + sl);
-	return(item);
+	return index;
 }
-
-
 
 void free_file(FILE** file)
 {
@@ -129,11 +120,28 @@ void free_file(FILE** file)
 	*file = NULL;
 }
 
-#define _cleanup_cstr_ __attribute((cleanup(free_cstr)))
-#define _cleanup_ldap_ __attribute((cleanup(free_ldap)))
-#define _cleanup_ldap_message_ __attribute((cleanup(free_ldap_message)))
-#define _cleanup_file_ __attribute((cleanup(free_file)))
-#define _cleanup_carr_ __attribute((cleanup(free_carr_n)))
+char * str_replace_nr(const char *str, const char *search, const char *replace)
+{
+	if(str == NULL) return NULL;
+	if(!strcmp(str, "")) return strdup("");
+	size_t size;
+	char *retstr, *walker, *trailer = (char*)str;
+	_cleanup_file_ FILE *stream = open_memstream (&retstr, &size);
+	while(true)
+	{
+		if((walker = strstr(trailer, search)) == NULL)
+		{
+			fputs(trailer, stream);
+			break;
+		}
+		_cleanup_cstr_ char * part = strndup(trailer, walker - trailer);
+		fputs(part, stream);
+		fputs(replace, stream);
+		trailer = walker + strlen(search);
+	}
+	fflush(stream);
+	return retstr;
+}
 
 int main( int argc, char **argv )
 {
@@ -246,7 +254,7 @@ int main( int argc, char **argv )
 	
 	if(attributes)
 	{
-		supersplit(&attributes_array, attributes, ",");
+		str_split(&attributes_array, attributes, ",");
 	}
 	
 	sprintf(uri, "ldap://%s:%d", hostname, port);
