@@ -120,7 +120,7 @@ void free_file(FILE** file)
 	*file = NULL;
 }
 
-char * str_replace_nr(const char *str, const char *search, const char *replace)
+char * str_replace(const char *str, const char *search, const char *replace)
 {
 	if(str == NULL) return NULL;
 	if(!strcmp(str, "")) return strdup("");
