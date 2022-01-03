@@ -265,7 +265,9 @@ int main( int argc, char **argv )
 	if(array_delimiter == NULL) array_delimiter = strdup("|");
 	if(attribute_delimiter == NULL) attribute_delimiter = strdup("\t");
 	_cleanup_cstr_ char * quoted_array_delimiter;
+	_cleanup_cstr_ char * quoted_attribute_delimiter;
 	asprintf(&quoted_array_delimiter, "\\%s", array_delimiter);
+	asprintf(&quoted_attribute_delimiter, "\\%s", attribute_delimiter);
 	
 	if(attributes)
 	{
@@ -411,7 +413,8 @@ int main( int argc, char **argv )
 							else fputs(array_delimiter, stream);
 							_cleanup_cstr_ char * quoted_string1 = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
 							_cleanup_cstr_ char * quoted_string2 = str_replace(quoted_string1, "\"", "\"\"\"\"");
-							fputs(quoted_string2, stream);
+							_cleanup_cstr_ char * quoted_string3 = str_replace(quoted_string2, attribute_delimiter, quoted_attribute_delimiter);
+							fputs(quoted_string3, stream);
 							//fputs(vals[ vi ]->bv_val, stream);
 
 						}
