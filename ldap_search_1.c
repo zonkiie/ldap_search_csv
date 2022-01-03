@@ -181,6 +181,8 @@ int main( int argc, char **argv )
 	char **vals, **referrals;
 
 	int version, rc, parse_rc, msgtype, num_entries = 0, num_refs = 0;
+	
+	static int print_header = false;
 
 	while(1)
 	{
@@ -194,7 +196,8 @@ int main( int argc, char **argv )
 			{"attribute_delimiter", required_argument, 0, 0},
 			{"attributes", required_argument, 0, 0},
 			{"configfile", required_argument, 0, 0},
-			{0, 0, 0, 0}
+			{"print_header", no_argument, &print_header, 1},
+			{0, 0, 0, 0},
 		};
 		c = getopt_long (argc, argv, "hc:", long_options, &option_index);
 		if(c == -1) break;
@@ -238,6 +241,7 @@ int main( int argc, char **argv )
 		puts("--hostname=<hostname>: connect to host <hostname>");
 		puts("--port=<port>: connect to port <port>");
 		puts("--basedn=<basedn>: use base dn <basedn>");
+		puts("--print_header: print header of column");
 		puts("--filter=<filter>: apply the filter <filter>");
 		puts("--array_delimiter=<delimiter>: use the delimiter <delimiter> to separate array entries");
 		puts("--attribute_delimiter=<delimiter>: use the delimiter <delimiter> to separate attributes");
@@ -251,6 +255,8 @@ int main( int argc, char **argv )
 	if(filter == NULL) filter = strdup(FILTER);
 	if(array_delimiter == NULL) array_delimiter = strdup("|");
 	if(attribute_delimiter == NULL) attribute_delimiter = strdup("\t");
+	_cleanup_cstr_ char * quoted_array_delimiter;
+	asprintf(&quoted_array_delimiter, "\\%s", array_delimiter);
 	
 	if(attributes)
 	{
@@ -364,9 +370,20 @@ int main( int argc, char **argv )
 
 				/* Iterate through each attribute in the entry. */
 				bool first_in_row = true;
-
-				for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
-
+				bool header_printed = false;
+				if(!header_printed && print_header)
+				{
+					for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
+						if(first_in_row) first_in_row = false;
+						else fputs(attribute_delimiter, stream);
+						fputs(a, stream);
+					}
+					fputs(LF, stream);
+					header_printed = true;
+				}
+				
+				first_in_row = true;
+				for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {	
 					if(first_in_row) first_in_row = false;
 					else fputs(attribute_delimiter, stream);
 					/* Get and print all values for each attribute. */
@@ -379,8 +396,12 @@ int main( int argc, char **argv )
 
 							//printf( "%s: %s\n", a, vals[ vi ]->bv_val );
 							if(first_in_array == true) first_in_array = false;
+							//else fputs(array_delimiter, stream);
 							else fputs(array_delimiter, stream);
-							fputs(vals[ vi ]->bv_val, stream);
+							_cleanup_cstr_ char * quoted_string1 = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
+							_cleanup_cstr_ char * quoted_string2 = str_replace(quoted_string1, "\"", "\"\"\"\"");
+							fputs(quoted_string2, stream);
+							//fputs(vals[ vi ]->bv_val, stream);
 
 						}
 						ber_bvecfree(vals);
