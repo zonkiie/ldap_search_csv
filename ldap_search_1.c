@@ -73,7 +73,7 @@ void free_carr_n(char ***carr)
 {
     if(carr == NULL || *carr == NULL) return;
 	int size = get_carr_size(*carr);
-	for(int i = size - 1; i > 0; i--) 
+	for(int i = size - 1; i >= 0; i--) 
 	{
 		free((*carr)[i]);
 		(*carr)[i] = NULL;
@@ -94,7 +94,8 @@ int substr_count(char *str, char *substr)
 int str_split(char ***dest, char *str, char *separator)
 {
 	int el_count = substr_count(str, separator) + 1;
-	*dest = (char**)malloc(el_count * sizeof(char*));
+	*dest = (char**)malloc((el_count + 1) * sizeof(char*));
+	memset((*dest), 0, (el_count + 1));
 	char *walker = strstr(str, separator), *trailer = str;
 	int index = 0;
 	while(true)
@@ -104,11 +105,11 @@ int str_split(char ***dest, char *str, char *separator)
 			(*dest)[index++] = strdup(trailer);
 			break;
 		}
-		int length = walker - trailer;
-		(*dest)[index++] = strndup(trailer, length);
+		(*dest)[index++] = strndup(trailer, walker - trailer);
 		trailer = walker + strlen(separator);
 		walker = strstr(trailer, separator);
 	}
+	(*dest)[index] = NULL;
 	return index;
 }
 
@@ -124,24 +125,25 @@ char * str_replace(const char *str, const char *search, const char *replace)
 {
 	if(str == NULL) return NULL;
 	if(!strcmp(str, "")) return strdup("");
-	size_t size;
-	char *retstr, *walker, *trailer = (char*)str;
-	_cleanup_file_ FILE *stream = open_memstream (&retstr, &size);
+	char *retstr = strdup(""), *walker, *trailer = (char*)str;
 	while(true)
 	{
 		if((walker = strstr(trailer, search)) == NULL)
 		{
-			fputs(trailer, stream);
+			_cleanup_cstr_ char * savestr = strdup(retstr);
+			free(retstr);
+			asprintf(&retstr, "%s%s", savestr, trailer);
 			break;
 		}
 		_cleanup_cstr_ char * part = strndup(trailer, walker - trailer);
-		fputs(part, stream);
-		fputs(replace, stream);
+		_cleanup_cstr_ char * saveptr = strdup(retstr);
+		free(retstr);
+		asprintf(&retstr, "%s%s%s", saveptr, part, replace);
 		trailer = walker + strlen(search);
 	}
-	fflush(stream);
 	return retstr;
 }
+
 
 int main( int argc, char **argv )
 {
@@ -149,6 +151,8 @@ int main( int argc, char **argv )
 	// https://stackoverflow.com/questions/59462003/getopt-long-using-flag-struct-member
 	static int show_help = 0;
 	
+	static int print_header = false;
+
 	_cleanup_ldap_ LDAP *ld = NULL;
 
 	_cleanup_ldap_message_ LDAPMessage *res = NULL, *msg = NULL;
@@ -157,7 +161,8 @@ int main( int argc, char **argv )
 
 	BerElement *ber;
 	
-	
+	_cleanup_cstr_ char *username = NULL;
+	_cleanup_cstr_ char *password = NULL;
 	_cleanup_cstr_ char *hostname = NULL;
 	_cleanup_cstr_ char *basedn = NULL;
 	_cleanup_cstr_ char *filter = NULL;
@@ -182,14 +187,14 @@ int main( int argc, char **argv )
 
 	int version, rc, parse_rc, msgtype, num_entries = 0, num_refs = 0;
 	
-	static int print_header = false;
-
 	while(1)
 	{
 		static struct option long_options[] = {
 			{"help", no_argument, &show_help, 1},
 			{"port", required_argument, 0, 0},
 			{"hostname", required_argument, 0, 0},
+			{"username", required_argument, 0, 0},
+			{"password", required_argument, 0, 0},
 			{"basedn", required_argument, 0, 0},
 			{"filter", required_argument, 0, 0},
 			{"array_delimiter", required_argument, 0, 0},
@@ -208,6 +213,8 @@ int main( int argc, char **argv )
 				char* oname = (char*)long_options[option_index].name;
 				if(!strcmp(oname, "port")) port = atoi(optarg);
 				if(!strcmp(oname, "hostname")) hostname = strdup(optarg);
+				if(!strcmp(oname, "username")) username = strdup(optarg);
+				if(!strcmp(oname, "password")) password = strdup(optarg);
 				if(!strcmp(oname, "basedn")) basedn = strdup(optarg);
 				if(!strcmp(oname, "filter")) filter = strdup(optarg);
 				if(!strcmp(oname, "array_delimiter")) array_delimiter = strdup(optarg);
@@ -238,6 +245,8 @@ int main( int argc, char **argv )
 	if(show_help)
 	{
 		puts("Command line has priority over Config file!");
+		puts("--username=<username>: connect to host with username <username>");
+		puts("--password=<password>: connect to host with password <password>");
 		puts("--hostname=<hostname>: connect to host <hostname>");
 		puts("--port=<port>: connect to port <port>");
 		puts("--basedn=<basedn>: use base dn <basedn>");
@@ -288,7 +297,7 @@ int main( int argc, char **argv )
 
 	/* Bind to the server anonymously. */
 
-	rc = ldap_simple_bind_s( ld, NULL, NULL );
+	rc = ldap_simple_bind_s( ld, username, password );
 	//rc = ldap_sasl_bind_s( ld, NULL, NULL , NULL, NULL, NULL, NULL);
 
 	if ( rc != LDAP_SUCCESS ) {
@@ -377,9 +386,11 @@ int main( int argc, char **argv )
 						if(first_in_row) first_in_row = false;
 						else fputs(attribute_delimiter, stream);
 						fputs(a, stream);
+						ldap_memfree( a );
 					}
 					fputs(LF, stream);
 					header_printed = true;
+					ber_free( ber, 0 );
 				}
 				
 				first_in_row = true;
