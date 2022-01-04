@@ -368,6 +368,7 @@ int main( int argc, char **argv )
 			/* If the result was an entry found by the search, get and print the attributes and values of the entry. */
 
 			case LDAP_RES_SEARCH_ENTRY:
+				fputs("LDAP_RES_SEARCH_ENTRY\n", stderr);
 
 				/* Get and print the DN of the entry. */
 
@@ -414,7 +415,7 @@ int main( int argc, char **argv )
 							_cleanup_cstr_ char * quoted_string1 = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
 							_cleanup_cstr_ char * quoted_string2 = str_replace(quoted_string1, "\"", "\"\"\"\"");
 							_cleanup_cstr_ char * quoted_string3 = str_replace(quoted_string2, attribute_delimiter, quoted_attribute_delimiter);
-							fputs(quoted_string3, stream);
+							//fputs(quoted_string3, stream);
 							//fputs(vals[ vi ]->bv_val, stream);
 
 						}
@@ -437,6 +438,7 @@ int main( int argc, char **argv )
 				break;
 
 			case LDAP_RES_SEARCH_REFERENCE:
+				fputs("LDAP_RES_SEARCH_REFERENCE\n", stderr);
 
 				/* The server sent a search reference encountered during the search operation. */
 
@@ -467,6 +469,7 @@ int main( int argc, char **argv )
 				break;
 
 			case LDAP_RES_SEARCH_RESULT:
+				fputs("LDAP_RES_SEARCH_RESULT\n", stderr);
 
 				/* Parse the final result received from the server. Note the last argument is a non-zero value, which indicates that the LDAPMessage structure will be freed when done. (No need to call ldap_msgfree().) */
 
@@ -513,6 +516,7 @@ int main( int argc, char **argv )
 				break;
 
 			default:
+				fputs("DEFAULT\n", stderr);
 
 				break;
 
