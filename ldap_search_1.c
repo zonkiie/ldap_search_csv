@@ -414,7 +414,6 @@ int main( int argc, char **argv )
 							_cleanup_cstr_ char * quoted_string1 = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
 							_cleanup_cstr_ char * quoted_string2 = str_replace(quoted_string1, "\"", "\"\"\"\"");
 							_cleanup_cstr_ char * quoted_string3 = str_replace(quoted_string2, attribute_delimiter, quoted_attribute_delimiter);
-							fprintf(stderr, "a: %s, Quoted String 1: %s, Quoted String 2: %s, Quoted String 3: %s, bv_val: %s\n", a, quoted_string1, quoted_string2, quoted_string3, vals[ vi ]->bv_val);
 							fputs(quoted_string3, stream);
 							//fputs(vals[ vi ]->bv_val, stream);
 
