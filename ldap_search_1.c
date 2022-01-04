@@ -19,9 +19,6 @@
 
 #define BASEDN "ou=mathematicians,dc=example,dc=com"
 
-//#define SCOPE LDAP_SCOPE_SUBTREE
-#define SCOPE LDAP_SCOPE_CHILDREN
-
 #define FILTER "(objectClass=*)"
 // https://gist.github.com/syzdek/1459007/31d8fdf197655c8ff001c27b4c1085fb728652f9
 
@@ -148,7 +145,7 @@ char * str_replace(const char *str, const char *search, const char *replace)
 
 int main( int argc, char **argv )
 {
-	int port = LDAP_PORT, option_index = 0, c = 0;
+	int port = LDAP_PORT, option_index = 0, c = 0, scope = -1;
 	// https://stackoverflow.com/questions/59462003/getopt-long-using-flag-struct-member
 	static int show_help = 0;
 	
@@ -198,6 +195,7 @@ int main( int argc, char **argv )
 			{"password", required_argument, 0, 0},
 			{"basedn", required_argument, 0, 0},
 			{"filter", required_argument, 0, 0},
+			{"scope", required_argument, 0, 0},
 			{"array_delimiter", required_argument, 0, 0},
 			{"attribute_delimiter", required_argument, 0, 0},
 			{"attributes", required_argument, 0, 0},
@@ -222,6 +220,14 @@ int main( int argc, char **argv )
 				if(!strcmp(oname, "attribute_delimiter")) attribute_delimiter = strdup(optarg);
 				if(!strcmp(oname, "attributes")) attributes = strdup(optarg);
 				if(!strcmp(oname, "configfile")) configfile = strdup(optarg);
+				if(!strcmp(oname, "scope"))
+				{
+					if(!strcasecmp(optarg, "LDAP_SCOPE_BASE")) scope = LDAP_SCOPE_BASE;
+					else if(!strcasecmp(optarg, "LDAP_SCOPE_ONELEVEL")) scope = LDAP_SCOPE_ONELEVEL;
+					else if(!strcasecmp(optarg, "LDAP_SCOPE_SUBTREE")) scope = LDAP_SCOPE_SUBTREE;
+					else if(!strcasecmp(optarg, "LDAP_SCOPE_CHILDREN")) scope = LDAP_SCOPE_CHILDREN;
+					else abort();
+				}
 				break;
 			}
 			case 1:
@@ -253,6 +259,7 @@ int main( int argc, char **argv )
 		puts("--basedn=<basedn>: use base dn <basedn>");
 		puts("--print_header: print header of column");
 		puts("--filter=<filter>: apply the filter <filter>");
+		puts("--scope=<scope>: use one of the scopes: LDAP_SCOPE_BASE, LDAP_SCOPE_ONELEVEL, LDAP_SCOPE_SUBTREE, LDAP_SCOPE_CHILDREN - Important: Give the scope!");
 		puts("--array_delimiter=<delimiter>: use the delimiter <delimiter> to separate array entries");
 		puts("--attribute_delimiter=<delimiter>: use the delimiter <delimiter> to separate attributes");
 		puts("--attributes=<attributes>: csv list of queried attributes");
@@ -330,7 +337,7 @@ int main( int argc, char **argv )
 
 	/* Perform the search operation. */
 
-	rc = ldap_search_ext_s( ld, basedn, SCOPE, filter, attributes_array, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &res );
+	rc = ldap_search_ext_s( ld, basedn, scope, filter, attributes_array, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &res );
 
 	if ( rc != LDAP_SUCCESS ) {
 
