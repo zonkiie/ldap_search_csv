@@ -19,7 +19,8 @@
 
 #define BASEDN "ou=mathematicians,dc=example,dc=com"
 
-#define SCOPE LDAP_SCOPE_SUBTREE
+//#define SCOPE LDAP_SCOPE_SUBTREE
+#define SCOPE LDAP_SCOPE_CHILDREN
 
 #define FILTER "(objectClass=*)"
 // https://gist.github.com/syzdek/1459007/31d8fdf197655c8ff001c27b4c1085fb728652f9
