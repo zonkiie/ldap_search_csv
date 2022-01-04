@@ -412,11 +412,9 @@ int main( int argc, char **argv )
 							//else fputs(array_delimiter, stream);
 							else fputs(array_delimiter, stream);
 							_cleanup_cstr_ char * quoted_string1 = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
-							fprintf(stderr, "Quoted String 1: %s\n", quoted_string1);
 							_cleanup_cstr_ char * quoted_string2 = str_replace(quoted_string1, "\"", "\"\"\"\"");
-							fprintf(stderr, "Quoted String 2: %s\n", quoted_string2);
 							_cleanup_cstr_ char * quoted_string3 = str_replace(quoted_string2, attribute_delimiter, quoted_attribute_delimiter);
-							fprintf(stderr, "Quoted String 3: %s\n", quoted_string3);
+							fprintf(stderr, "Quoted String 1: %s, Quoted String 2: %s, Quoted String 3: %s, bv_val: %s\n", quoted_string1, quoted_string2, quoted_string3, vals[ vi ]->bv_val);
 							fputs(quoted_string3, stream);
 							//fputs(vals[ vi ]->bv_val, stream);
 
