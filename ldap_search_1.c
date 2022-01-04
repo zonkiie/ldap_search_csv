@@ -45,7 +45,6 @@ void reassign_cstr(char **str, const char * value)
 
 void free_ldap(LDAP **ldap)
 {
-	fprintf(stderr, "Free LDAP\n");
 	if(*ldap == NULL) return;
 	ldap_unbind_ext_s( *ldap , NULL, NULL);
 	*ldap = NULL;
