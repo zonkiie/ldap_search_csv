@@ -149,6 +149,8 @@ int main( int argc, char **argv )
 	static int show_help = 0;
 	
 	static int print_header = false;
+	
+	int version, rc, parse_rc, msgtype, num_entries = 0, num_refs = 0;
 
 	_cleanup_ldap_ LDAP *ld = NULL;
 
@@ -181,8 +183,6 @@ int main( int argc, char **argv )
 	char uri[256];
 
 	char **vals, **referrals;
-
-	int version, rc, parse_rc, msgtype, num_entries = 0, num_refs = 0;
 	
 	while(1)
 	{
@@ -331,9 +331,6 @@ int main( int argc, char **argv )
 
 	}
 	
-	//fprintf(stderr, "Bind successfull.\n");
-	//fflush(stderr);
-
 	/* Perform the search operation. */
 
 	rc = ldap_search_ext_s( ld, basedn, scope, filter, attributes_array, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &res );
@@ -365,6 +362,7 @@ int main( int argc, char **argv )
 	/* Iterate through the results. An LDAPMessage structure sent back from a search operation can contain either an entry found by the search, a search reference, or the final result of the search operation. */
 
 	for ( msg = ldap_first_message( ld, res ); msg != NULL; msg = ldap_next_message( ld, msg ) ) {
+		fprintf(stderr, "Next Message\n");
 
 		/* Determine what type of message was sent from the server. */
 
