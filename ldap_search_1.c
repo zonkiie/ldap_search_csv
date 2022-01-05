@@ -387,7 +387,7 @@ int main( int argc, char **argv )
 
 				/* Get and print the DN of the entry. */
 
-				if (( dn = ldap_get_dn( ld, res )) != NULL && debug) {
+				if (debug && ( dn = ldap_get_dn( ld, res )) != NULL) {
 
 					printf( "dn: %s\n", dn );
 
@@ -485,7 +485,7 @@ int main( int argc, char **argv )
 				break;
 
 			case LDAP_RES_SEARCH_RESULT:
-				if(debug) fputs("LDAP_RES_SEARCH_RESULT", stderr);
+				if(debug) fputs("LDAP_RES_SEARCH_RESULT\n", stderr);
 
 				/* Parse the final result received from the server. Note the last argument is a non-zero value, which indicates that the LDAPMessage structure will be freed when done. (No need to call ldap_msgfree().) */
 
