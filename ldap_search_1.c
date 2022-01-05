@@ -445,6 +445,7 @@ int main( int argc, char **argv )
 				break;
 
 			case LDAP_RES_SEARCH_REFERENCE:
+				fputs("LDAP_RES_SEARCH_REFERENCE", stderr);
 
 				/* The server sent a search reference encountered during the search operation. */
 
@@ -475,6 +476,7 @@ int main( int argc, char **argv )
 				break;
 
 			case LDAP_RES_SEARCH_RESULT:
+				fputs("LDAP_RES_SEARCH_RESULT", stderr);
 
 				/* Parse the final result received from the server. Note the last argument is a non-zero value, which indicates that the LDAPMessage structure will be freed when done. (No need to call ldap_msgfree().) */
 
