@@ -362,7 +362,6 @@ int main( int argc, char **argv )
 	/* Iterate through the results. An LDAPMessage structure sent back from a search operation can contain either an entry found by the search, a search reference, or the final result of the search operation. */
 
 	for ( msg = ldap_first_message( ld, res ); msg != NULL; msg = ldap_next_message( ld, msg ) ) {
-		fprintf(stderr, "Next Message\n");
 
 		/* Determine what type of message was sent from the server. */
 
@@ -378,7 +377,7 @@ int main( int argc, char **argv )
 
 				if (( dn = ldap_get_dn( ld, res )) != NULL ) {
 
-					//printf( "dn: %s\n", dn );
+					printf( "dn: %s\n", dn );
 
 					ldap_memfree( dn );
 
