@@ -418,10 +418,11 @@ int main( int argc, char **argv )
 							if(first_in_array == true) first_in_array = false;
 							//else fputs(array_delimiter, stream);
 							else fputs(array_delimiter, stream);
-							_cleanup_cstr_ char * quoted_string1 = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
-							_cleanup_cstr_ char * quoted_string2 = str_replace(quoted_string1, "\"", "\"\"\"\"");
-							_cleanup_cstr_ char * quoted_string3 = str_replace(quoted_string2, attribute_delimiter, quoted_attribute_delimiter);
-							fputs(quoted_string3, stream);
+							_cleanup_carr_ char ** step = (char**)calloc(5, sizeof(char*));
+							step[0] = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
+							step[1] = str_replace(step[0], "\"", "\"\"\"\"");
+							step[2] = str_replace(step[1], attribute_delimiter, quoted_attribute_delimiter);
+							fputs(step[2], stream);
 							//fputs(vals[ vi ]->bv_val, stream);
 
 						}
