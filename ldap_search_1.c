@@ -150,6 +150,10 @@ int main( int argc, char **argv )
 	
 	static int print_header = false;
 	
+	static int no_output = false;
+	
+	static int debug = false;
+	
 	bool first_in_row = false;
 	
 	int version, rc, parse_rc, msgtype, num_entries = 0, num_refs = 0;
@@ -190,6 +194,8 @@ int main( int argc, char **argv )
 	{
 		static struct option long_options[] = {
 			{"help", no_argument, &show_help, 1},
+			{"debug", no_argument, &debug, 1},
+			{"no_output", no_argument, &no_output, 1},
 			{"port", required_argument, 0, 0},
 			{"hostname", required_argument, 0, 0},
 			{"username", required_argument, 0, 0},
@@ -259,6 +265,8 @@ int main( int argc, char **argv )
 		puts("--port=<port>: connect to port <port>");
 		puts("--basedn=<basedn>: use base dn <basedn>");
 		puts("--print_header: print header of column");
+		puts("--debug: print debug messages");
+		puts("--no_output: print no output (Usable for debugging)");
 		puts("--filter=<filter>: apply the filter <filter>");
 		puts("--scope=<scope>: use one of the scopes: LDAP_SCOPE_BASE, LDAP_SCOPE_ONELEVEL, LDAP_SCOPE_SUBTREE, LDAP_SCOPE_CHILDREN - Important: Give the scope!");
 		puts("--array_delimiter=<delimiter>: use the delimiter <delimiter> to separate array entries");
@@ -375,10 +383,11 @@ int main( int argc, char **argv )
 			/* If the result was an entry found by the search, get and print the attributes and values of the entry. */
 
 			case LDAP_RES_SEARCH_ENTRY:
+				if(debug) fputs("LDAP_RES_SEARCH_ENTRY", stderr);
 
 				/* Get and print the DN of the entry. */
 
-				if (( dn = ldap_get_dn( ld, res )) != NULL ) {
+				if (( dn = ldap_get_dn( ld, res )) != NULL && debug) {
 
 					printf( "dn: %s\n", dn );
 
@@ -445,7 +454,7 @@ int main( int argc, char **argv )
 				break;
 
 			case LDAP_RES_SEARCH_REFERENCE:
-				fputs("LDAP_RES_SEARCH_REFERENCE", stderr);
+				if(debug) fputs("LDAP_RES_SEARCH_REFERENCE", stderr);
 
 				/* The server sent a search reference encountered during the search operation. */
 
@@ -476,7 +485,7 @@ int main( int argc, char **argv )
 				break;
 
 			case LDAP_RES_SEARCH_RESULT:
-				fputs("LDAP_RES_SEARCH_RESULT", stderr);
+				if(debug) fputs("LDAP_RES_SEARCH_RESULT", stderr);
 
 				/* Parse the final result received from the server. Note the last argument is a non-zero value, which indicates that the LDAPMessage structure will be freed when done. (No need to call ldap_msgfree().) */
 
@@ -531,7 +540,7 @@ int main( int argc, char **argv )
 
 	}
 	fflush(stream);
-	puts(buf);
+	if(!no_output) puts(buf);
 
 	/* Disconnect when done. */
 
