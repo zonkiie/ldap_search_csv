@@ -150,6 +150,8 @@ int main( int argc, char **argv )
 	
 	static int print_header = false;
 	
+	bool first_in_row = false;
+	
 	int version, rc, parse_rc, msgtype, num_entries = 0, num_refs = 0;
 
 	_cleanup_ldap_ LDAP *ld = NULL;
@@ -361,7 +363,8 @@ int main( int argc, char **argv )
 
 	/* Iterate through the results. An LDAPMessage structure sent back from a search operation can contain either an entry found by the search, a search reference, or the final result of the search operation. */
 
-	for ( msg = ldap_first_message( ld, res ); msg != NULL; msg = ldap_next_message( ld, msg ) ) {
+	//for ( msg = ldap_first_message( ld, res ); msg != NULL; msg = ldap_next_message( ld, msg ) ) {
+	for ( msg = ldap_first_entry( ld, res ); msg != NULL; msg = ldap_next_entry( ld, msg ) ) {
 
 		/* Determine what type of message was sent from the server. */
 
@@ -384,7 +387,7 @@ int main( int argc, char **argv )
 				}
 
 				/* Iterate through each attribute in the entry. */
-				bool first_in_row = true;
+				first_in_row = true;
 				bool header_printed = false;
 				if(!header_printed && print_header)
 				{
