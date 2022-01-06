@@ -527,13 +527,13 @@ int main( int argc, char **argv )
 
 				} else {
 
-				/*printf( "Search completed successfully.\n"
+					if(debug) fprintf(stderr, "Search completed successfully.\n"
 
-					"Entries found: %d\n"
+						"Entries found: %d\n"
 
-					"Search references returned: %d\n",
+						"Search references returned: %d\n",
 
-					num_entries, num_refs );*/
+						num_entries, num_refs );*/
 
 				}
 
