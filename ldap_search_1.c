@@ -162,7 +162,7 @@ int main( int argc, char **argv )
 	
 	static int debug = false;
 	
-	bool first_in_row = false;
+	bool first_in_row = false, header_printed = false;
 	
 	int version, rc, parse_rc, msgtype, num_entries = 0, num_refs = 0;
 
@@ -405,7 +405,6 @@ int main( int argc, char **argv )
 
 				/* Iterate through each attribute in the entry. */
 				first_in_row = true;
-				bool header_printed = false;
 				if(!header_printed && print_header)
 				{
 					for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
@@ -424,7 +423,7 @@ int main( int argc, char **argv )
 					if(first_in_row) first_in_row = false;
 					else fputs(attribute_delimiter, stream);
 					/* Get and print all values for each attribute. */
-					//fprintf(stderr, "a: %s\n", a);
+					if(debug) fprintf(stderr, "attrib: %s\n", a);
 					struct berval **vals = NULL;
 					if((vals = ldap_get_values_len(ld, res, a)) != NULL)
 					{
