@@ -83,7 +83,7 @@ void free_carr_n(char ***carr)
 void free_ber(BerElement **ber)
 {
 	if(ber == NULL || *ber == NULL) return;
-	ber_free(*ber);
+	ber_free(*ber, 0);
 	*ber = NULL;
 }
 
