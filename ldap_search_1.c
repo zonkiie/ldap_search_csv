@@ -533,7 +533,7 @@ int main( int argc, char **argv )
 
 						"Search references returned: %d\n",
 
-						num_entries, num_refs );*/
+						num_entries, num_refs );
 
 				}
 
