@@ -27,6 +27,7 @@
 #define _cleanup_cstr_ __attribute((cleanup(free_cstr)))
 #define _cleanup_ldap_ __attribute((cleanup(free_ldap)))
 #define _cleanup_ldap_message_ __attribute((cleanup(free_ldap_message)))
+#define _cleanup_ldap_ber_ __attribute((cleanup(free_ber)))
 #define _cleanup_file_ __attribute((cleanup(free_file)))
 #define _cleanup_carr_ __attribute((cleanup(free_carr_n)))
 
@@ -77,6 +78,13 @@ void free_carr_n(char ***carr)
 	}
 	free(*carr);
 	*carr = NULL;
+}
+
+void free_ber(BerElement **ber)
+{
+	if(ber == NULL || *ber == NULL) return;
+	ber_free(*ber);
+	*ber = NULL;
 }
 
 int substr_count(char *str, char *substr)
@@ -389,7 +397,7 @@ int main( int argc, char **argv )
 
 				if (debug && ( dn = ldap_get_dn( ld, res )) != NULL) {
 
-					printf( "dn: %s\n", dn );
+					fprintf(stderr, "dn: %s\n", dn );
 
 					ldap_memfree( dn );
 
@@ -430,8 +438,9 @@ int main( int argc, char **argv )
 							_cleanup_carr_ char ** step = (char**)calloc(5, sizeof(char*));
 							step[0] = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
 							step[1] = str_replace(step[0], "\"", "\"\"\"\"");
-							step[2] = str_replace(step[1], attribute_delimiter, quoted_attribute_delimiter);
-							fputs(step[2], stream);
+							step[2] = str_replace(step[1], "\n", "\\n");
+							step[3] = str_replace(step[2], attribute_delimiter, quoted_attribute_delimiter);
+							fputs(step[3], stream);
 							//fputs(vals[ vi ]->bv_val, stream);
 
 						}
