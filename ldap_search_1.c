@@ -196,7 +196,7 @@ int main( int argc, char **argv )
 	
 	char uri[256];
 
-	char **vals, **referrals;
+	char **referrals;
 	
 	while(1)
 	{
@@ -324,8 +324,8 @@ int main( int argc, char **argv )
 
 	/* Bind to the server anonymously. */
 
-	rc = ldap_simple_bind_s( ld, username, password );
-	//rc = ldap_sasl_bind_s( ld, NULL, NULL , NULL, NULL, NULL, NULL);
+	//rc = ldap_simple_bind_s( ld, username, password );
+	rc = ldap_sasl_bind_s( ld, username, password , NULL, NULL, NULL, NULL);
 
 	if ( rc != LDAP_SUCCESS ) {
 
@@ -486,7 +486,8 @@ int main( int argc, char **argv )
 
 					}
 
-					ldap_value_free( referrals );
+					//ldap_value_free( referrals );
+					free_carr_n(&referrals);
 
 				}
 
