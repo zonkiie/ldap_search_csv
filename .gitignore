@@ -52,4 +52,4 @@ Mkfile.old
 dkms.conf
 
 ldap_search_1
-
+ldap_search_1_sync

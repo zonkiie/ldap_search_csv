@@ -53,7 +53,7 @@ void free_ldap(LDAP **ldap)
 
 void free_ldap_message(LDAPMessage **message)
 {
-	if(*message == NULL) return;
+	if(*message == NULL || message == NULL) return;
 	ldap_msgfree(*message);
 	*message = NULL;
 }
@@ -164,11 +164,13 @@ int main( int argc, char **argv )
 	
 	bool first_in_row = false, header_printed = false;
 	
-	int version, rc, parse_rc, msgtype, num_entries = 0, num_refs = 0;
+	int version, msgid, rc, parse_rc, finished = 0, msgtype, num_entries = 0, num_refs = 0;
 
 	_cleanup_ldap_ LDAP *ld = NULL;
 
-	_cleanup_ldap_message_ LDAPMessage *res = NULL, *msg = NULL;
+	_cleanup_ldap_message_ LDAPMessage *res = NULL;
+	
+	LDAPMessage *msg = NULL;
 
 	LDAPControl **serverctrls;
 
@@ -293,6 +295,8 @@ int main( int argc, char **argv )
 	_cleanup_cstr_ char * quoted_attribute_delimiter;
 	asprintf(&quoted_array_delimiter, "\\%s", array_delimiter);
 	asprintf(&quoted_attribute_delimiter, "\\%s", attribute_delimiter);
+	struct         timeval  zerotime;
+	zerotime.tv_sec = zerotime.tv_usec = 0L;
 	
 	if(attributes)
 	{
@@ -324,8 +328,8 @@ int main( int argc, char **argv )
 
 	/* Bind to the server anonymously. */
 
-	//rc = ldap_simple_bind_s( ld, username, password );
-	rc = ldap_sasl_bind_s( ld, username, password , NULL, NULL, NULL, NULL);
+	rc = ldap_simple_bind_s( ld, username, password );
+	//rc = ldap_sasl_bind_s( ld, username, password , NULL, NULL, NULL, NULL);
 
 	if ( rc != LDAP_SUCCESS ) {
 
@@ -351,7 +355,8 @@ int main( int argc, char **argv )
 	
 	/* Perform the search operation. */
 
-	rc = ldap_search_ext_s( ld, basedn, scope, filter, attributes_array, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &res );
+	//rc = ldap_search_ext_s( ld, basedn, scope, filter, attributes_array, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &res );
+	rc = ldap_search_ext( ld, basedn, scope, filter, attributes_array, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &msgid );
 
 	if ( rc != LDAP_SUCCESS ) {
 
@@ -372,26 +377,24 @@ int main( int argc, char **argv )
 		return( 1 );
 
 	}
+	while ( !finished )
+	{
+		rc = ldap_result( ld, msgid, LDAP_MSG_ONE, &zerotime, &res );
+		
 
-	num_entries = ldap_count_entries( ld, res );
-
-	num_refs = ldap_count_references( ld, res );
-
-	/* Iterate through the results. An LDAPMessage structure sent back from a search operation can contain either an entry found by the search, a search reference, or the final result of the search operation. */
-
-	for ( msg = ldap_first_message( ld, res ); msg != NULL; msg = ldap_next_message( ld, msg ) ) {
-	//for ( msg = ldap_first_entry( ld, res ); msg != NULL; msg = ldap_next_entry( ld, msg ) ) {
-
-		/* Determine what type of message was sent from the server. */
-
-		msgtype = ldap_msgtype( msg );
-
-		switch( msgtype ) {
+		switch( rc ) {
+			case -1:
+				fprintf( stderr, "ldap_result: %s\n", ldap_err2string( rc ) );
+				return( 1 );
+			case 0:
+				break;
 
 			/* If the result was an entry found by the search, get and print the attributes and values of the entry. */
 
 			case LDAP_RES_SEARCH_ENTRY:
 				if(debug) fputs("LDAP_RES_SEARCH_ENTRY\n", stderr);
+				
+				num_entries++;
 
 				/* Get and print the DN of the entry. */
 
@@ -463,12 +466,15 @@ int main( int argc, char **argv )
 
 			case LDAP_RES_SEARCH_REFERENCE:
 				if(debug) fputs("LDAP_RES_SEARCH_REFERENCE", stderr);
+				
+				num_refs++;
 
 				/* The server sent a search reference encountered during the search operation. */
 
 				/* Parse the result and print the search references. Ideally, rather than print them out, you would follow the references. */
 
-				parse_rc = ldap_parse_reference( ld, msg, &referrals, NULL, 0 );
+				// parse_rc = ldap_parse_reference( ld, res, &referrals, NULL, 0 );
+				parse_rc = ldap_parse_reference( ld, msg, &referrals, NULL, 1 );
 
 				if ( parse_rc != LDAP_SUCCESS ) {
 
@@ -495,10 +501,12 @@ int main( int argc, char **argv )
 
 			case LDAP_RES_SEARCH_RESULT:
 				if(debug) fputs("LDAP_RES_SEARCH_RESULT\n", stderr);
+				finished = 1;
 
 				/* Parse the final result received from the server. Note the last argument is a non-zero value, which indicates that the LDAPMessage structure will be freed when done. (No need to call ldap_msgfree().) */
 
-				parse_rc = ldap_parse_result( ld, msg, &rc, &matched_msg, &error_msg, NULL, &serverctrls, 0 );
+				//parse_rc = ldap_parse_result( ld, msg, &rc, &matched_msg, &error_msg, NULL, &serverctrls, 0 );
+				parse_rc = ldap_parse_result( ld, msg, &rc, &matched_msg, &error_msg, NULL, &serverctrls, 1 );
 
 				if ( parse_rc != LDAP_SUCCESS ) {
 
