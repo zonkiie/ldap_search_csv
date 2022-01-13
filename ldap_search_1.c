@@ -30,6 +30,7 @@
 #define _cleanup_ldap_ber_ __attribute((cleanup(free_ber)))
 #define _cleanup_file_ __attribute((cleanup(free_file)))
 #define _cleanup_carr_ __attribute((cleanup(free_carr_n)))
+#define _cleanup_berval_ __attribute((cleanup(free_berval)))
 
 void free_cstr(char ** str)
 {
@@ -85,6 +86,13 @@ void free_ber(BerElement **ber)
 	if(ber == NULL || *ber == NULL) return;
 	ber_free(*ber, 0);
 	*ber = NULL;
+}
+
+void free_berval(struct berval **bval)
+{
+	if(bval == NULL || *bval == NULL) return;
+	ber_bvfree(*bval);
+	*bval = NULL;
 }
 
 int substr_count(char *str, char *substr)
@@ -185,6 +193,7 @@ int main( int argc, char **argv )
 	_cleanup_cstr_ char *array_delimiter = NULL;
 	_cleanup_cstr_ char *attribute_delimiter = NULL;
 	_cleanup_cstr_ char *attributes = NULL;
+	_cleanup_berval_ struct berval *berval_password = NULL;
 	
 	_cleanup_carr_ char **attributes_array = NULL;
 	
@@ -291,6 +300,7 @@ int main( int argc, char **argv )
 	if(filter == NULL) filter = strdup(FILTER);
 	if(array_delimiter == NULL) array_delimiter = strdup("|");
 	if(attribute_delimiter == NULL) attribute_delimiter = strdup("\t");
+	if(password != NULL) berval_password = ber_bvstrdup(password);
 	_cleanup_cstr_ char * quoted_array_delimiter;
 	_cleanup_cstr_ char * quoted_attribute_delimiter;
 	asprintf(&quoted_array_delimiter, "\\%s", array_delimiter);
@@ -326,10 +336,10 @@ int main( int argc, char **argv )
 
 	}
 
-	/* Bind to the server anonymously. */
+	/* Bind to the server */
 
 	rc = ldap_simple_bind_s( ld, username, password );
-	//rc = ldap_sasl_bind_s( ld, username, password , NULL, NULL, NULL, NULL);
+	//rc = ldap_sasl_bind_s( ld, username, LDAP_SASL_SIMPLE, berval_password , NULL, NULL, NULL);
 
 	if ( rc != LDAP_SUCCESS ) {
 
