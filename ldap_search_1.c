@@ -462,6 +462,8 @@ int main( int argc, char **argv )
 
 				//printf( "\n" );
 				fputs(LF, stream);
+				
+				free_ldap_message(&res);
 
 				break;
 
@@ -475,7 +477,7 @@ int main( int argc, char **argv )
 				/* Parse the result and print the search references. Ideally, rather than print them out, you would follow the references. */
 
 				// parse_rc = ldap_parse_reference( ld, res, &referrals, NULL, 0 );
-				parse_rc = ldap_parse_reference( ld, msg, &referrals, NULL, 1 );
+				parse_rc = ldap_parse_reference( ld, res, &referrals, NULL, 1 );
 
 				if ( parse_rc != LDAP_SUCCESS ) {
 
@@ -507,11 +509,12 @@ int main( int argc, char **argv )
 				/* Parse the final result received from the server. Note the last argument is a non-zero value, which indicates that the LDAPMessage structure will be freed when done. (No need to call ldap_msgfree().) */
 
 				//parse_rc = ldap_parse_result( ld, msg, &rc, &matched_msg, &error_msg, NULL, &serverctrls, 0 );
-				parse_rc = ldap_parse_result( ld, msg, &rc, &matched_msg, &error_msg, NULL, &serverctrls, 1 );
+				parse_rc = ldap_parse_result( ld, res, &rc, &matched_msg, &error_msg, NULL, &serverctrls, 0 );
 
 				if ( parse_rc != LDAP_SUCCESS ) {
 
 					fprintf( stderr, "ldap_parse_result: %s\n", ldap_err2string( parse_rc ) );
+					free_ldap_message(&res);
 
 					return( 1 );
 
@@ -546,6 +549,8 @@ int main( int argc, char **argv )
 						num_entries, num_refs );
 
 				}
+				
+				free_ldap_message(&res);
 
 				break;
 
