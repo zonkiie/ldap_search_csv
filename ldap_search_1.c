@@ -171,6 +171,8 @@ int main( int argc, char **argv )
 	
 	static int debug = false;
 	
+	static int use_sasl = false;
+	
 	bool first_in_row = false, header_printed = false;
 	
 	int version, msgid, rc, parse_rc, finished = 0, msgtype, num_entries = 0, num_refs = 0;
@@ -215,6 +217,7 @@ int main( int argc, char **argv )
 			{"help", no_argument, &show_help, 1},
 			{"debug", no_argument, &debug, 1},
 			{"no_output", no_argument, &no_output, 1},
+			{"use_sasl", no_argument, &use_sasl, 1},
 			{"port", required_argument, 0, 0},
 			{"hostname", required_argument, 0, 0},
 			{"uri", required_argument, 0, 0},
@@ -289,6 +292,7 @@ int main( int argc, char **argv )
 		puts("--print_header: print header of column");
 		puts("--debug: print debug messages");
 		puts("--no_output: print no output (Usable for debugging)");
+		puts("--use_sasl: use sasl for connection (experimental!)");
 		puts("--filter=<filter>: apply the filter <filter>");
 		puts("--scope=<scope>: use one of the scopes: LDAP_SCOPE_BASE, LDAP_SCOPE_ONELEVEL, LDAP_SCOPE_SUBTREE, LDAP_SCOPE_CHILDREN - Important: Give the scope!");
 		puts("--array_delimiter=<delimiter>: use the delimiter <delimiter> to separate array entries");
@@ -341,8 +345,8 @@ int main( int argc, char **argv )
 
 	/* Bind to the server */
 
-	rc = ldap_simple_bind_s( ld, username, password );
-	//rc = ldap_sasl_bind_s( ld, username, LDAP_SASL_SIMPLE, berval_password , NULL, NULL, NULL);
+	if(!use_sasl) rc = ldap_simple_bind_s( ld, username, password );
+	else rc = ldap_sasl_bind_s( ld, username, LDAP_SASL_SIMPLE, berval_password , NULL, NULL, NULL);
 
 	if ( rc != LDAP_SUCCESS ) {
 
