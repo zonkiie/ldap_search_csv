@@ -16,6 +16,7 @@
 #define HOSTNAME "ldap.forumsys.com"
 
 #define PORTNUMBER LDAP_PORT
+#define PORTNUMBER_TLS LDAPS_PORT
 
 #define BASEDN "ou=mathematicians,dc=example,dc=com"
 
@@ -193,6 +194,7 @@ int main( int argc, char **argv )
 	_cleanup_cstr_ char *array_delimiter = NULL;
 	_cleanup_cstr_ char *attribute_delimiter = NULL;
 	_cleanup_cstr_ char *attributes = NULL;
+	_cleanup_cstr_ char *uri = NULL;
 	_cleanup_berval_ struct berval *berval_password = NULL;
 	
 	_cleanup_carr_ char **attributes_array = NULL;
@@ -205,8 +207,6 @@ int main( int argc, char **argv )
 
 	char *dn, *matched_msg = NULL, *error_msg = NULL;
 	
-	char uri[256];
-
 	char **referrals;
 	
 	while(1)
@@ -217,6 +217,7 @@ int main( int argc, char **argv )
 			{"no_output", no_argument, &no_output, 1},
 			{"port", required_argument, 0, 0},
 			{"hostname", required_argument, 0, 0},
+			{"uri", required_argument, 0, 0},
 			{"username", required_argument, 0, 0},
 			{"password", required_argument, 0, 0},
 			{"basedn", required_argument, 0, 0},
@@ -238,6 +239,7 @@ int main( int argc, char **argv )
 				char* oname = (char*)long_options[option_index].name;
 				if(!strcmp(oname, "port")) port = atoi(optarg);
 				if(!strcmp(oname, "hostname")) hostname = strdup(optarg);
+				if(!strcmp(oname, "uri")) uri = strdup(optarg);
 				if(!strcmp(oname, "username")) username = strdup(optarg);
 				if(!strcmp(oname, "password")) password = strdup(optarg);
 				if(!strcmp(oname, "basedn")) basedn = strdup(optarg);
@@ -282,6 +284,7 @@ int main( int argc, char **argv )
 		puts("--password=<password>: connect to host with password <password>");
 		puts("--hostname=<hostname>: connect to host <hostname>");
 		puts("--port=<port>: connect to port <port>");
+		puts("--uri=<uri>: use <uri> as target");
 		puts("--basedn=<basedn>: use base dn <basedn>");
 		puts("--print_header: print header of column");
 		puts("--debug: print debug messages");
@@ -313,7 +316,7 @@ int main( int argc, char **argv )
 		str_split(&attributes_array, attributes, ",");
 	}
 	
-	sprintf(uri, "ldap://%s:%d", hostname, port);
+	if(uri == NULL) asprintf(&uri, "ldap://%s:%d", hostname, port);
 	
 	/* Get a handle to an LDAP connection. */
 	
