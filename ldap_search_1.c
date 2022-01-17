@@ -457,6 +457,8 @@ int main( int argc, char **argv )
 					if((vals = ldap_get_values_len(ld, res, a)) != NULL)
 					{
 						bool first_in_array = true;
+						
+						if(debug) fprintf(stderr, "ldap_count_values_len(vals): %d\n", ldap_count_values_len(vals));
 						if(ldap_count_values_len(vals) == 0)
 						{
 							if(debug) fputs("Nullstring found!", stderr);
