@@ -453,6 +453,7 @@ int main( int argc, char **argv )
 					/* Get and print all values for each attribute. */
 					if(debug) fprintf(stderr, "attrib: %s\n", a);
 					struct berval **vals = NULL;
+					
 					if((vals = ldap_get_values_len(ld, res, a)) != NULL)
 					{
 						bool first_in_array = true;
@@ -462,23 +463,20 @@ int main( int argc, char **argv )
 							if(first_in_array == true) first_in_array = false;
 							//else fputs(array_delimiter, stream);
 							else fputs(array_delimiter, stream);
-							if(vals[ vi ]->bv_val == NULL)
-							{
-								fputs(nullstr, stream);
-							}
-							else
-							{
-								_cleanup_carr_ char ** step = (char**)calloc(5, sizeof(char*));
-								step[0] = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
-								step[1] = str_replace(step[0], "\"", "\"\"\"\"");
-								step[2] = str_replace(step[1], "\n", "\\n");
-								step[3] = str_replace(step[2], attribute_delimiter, quoted_attribute_delimiter);
-								fputs(step[3], stream);
-								//fputs(vals[ vi ]->bv_val, stream);
-							}
+							_cleanup_carr_ char ** step = (char**)calloc(5, sizeof(char*));
+							step[0] = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
+							step[1] = str_replace(step[0], "\"", "\"\"\"\"");
+							step[2] = str_replace(step[1], "\n", "\\n");
+							step[3] = str_replace(step[2], attribute_delimiter, quoted_attribute_delimiter);
+							fputs(step[3], stream);
+							//fputs(vals[ vi ]->bv_val, stream);
 
 						}
 						ber_bvecfree(vals);
+					}
+					else
+					{
+						fputs(nullstr, stream);
 					}
 					
 					ldap_memfree( a );
