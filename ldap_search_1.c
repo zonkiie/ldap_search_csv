@@ -459,6 +459,7 @@ int main( int argc, char **argv )
 						bool first_in_array = true;
 						if(ldap_count_values_len(vals) == 0)
 						{
+							if(debug) fputs("Nullstring found!", stderr);
 							fputs(nullstr, stream);
 						}
 						else
@@ -483,6 +484,7 @@ int main( int argc, char **argv )
 					}
 					else
 					{
+						if(debug) fputs("Nullstring found!", stderr);
 						fputs(nullstr, stream);
 					}
 					
