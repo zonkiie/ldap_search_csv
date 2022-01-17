@@ -25,6 +25,8 @@
 
 #define LF "\n"
 
+#define DEFAULT_NULL "(null)"
+
 #define _cleanup_cstr_ __attribute((cleanup(free_cstr)))
 #define _cleanup_ldap_ __attribute((cleanup(free_ldap)))
 #define _cleanup_ldap_message_ __attribute((cleanup(free_ldap_message)))
@@ -197,6 +199,7 @@ int main( int argc, char **argv )
 	_cleanup_cstr_ char *attribute_delimiter = NULL;
 	_cleanup_cstr_ char *attributes = NULL;
 	_cleanup_cstr_ char *uri = NULL;
+	_cleanup_cstr_ char *nullstr = NULL;
 	_cleanup_berval_ struct berval *berval_password = NULL;
 	
 	_cleanup_carr_ char **attributes_array = NULL;
@@ -220,6 +223,7 @@ int main( int argc, char **argv )
 			{"use_sasl", no_argument, &use_sasl, 1},
 			{"port", required_argument, 0, 0},
 			{"hostname", required_argument, 0, 0},
+			{"null", required_argument, 0, 0},
 			{"uri", required_argument, 0, 0},
 			{"username", required_argument, 0, 0},
 			{"password", required_argument, 0, 0},
@@ -247,6 +251,7 @@ int main( int argc, char **argv )
 				if(!strcmp(oname, "password")) password = strdup(optarg);
 				if(!strcmp(oname, "basedn")) basedn = strdup(optarg);
 				if(!strcmp(oname, "filter")) filter = strdup(optarg);
+				if(!strcmp(oname, "null")) nullstr = strdup(optarg);
 				if(!strcmp(oname, "array_delimiter")) array_delimiter = strdup(optarg);
 				if(!strcmp(oname, "attribute_delimiter")) attribute_delimiter = strdup(optarg);
 				if(!strcmp(oname, "attributes")) attributes = strdup(optarg);
@@ -289,6 +294,7 @@ int main( int argc, char **argv )
 		puts("--port=<port>: connect to port <port>");
 		puts("--uri=<uri>: use <uri> as target");
 		puts("--basedn=<basedn>: use base dn <basedn>");
+		puts("--null=<null>: define nullstring (Default:" DEFAULT_NULL ")");
 		puts("--print_header: print header of column");
 		puts("--debug: print debug messages");
 		puts("--no_output: print no output (Usable for debugging)");
@@ -305,6 +311,7 @@ int main( int argc, char **argv )
 	if(hostname == NULL) hostname = strdup(HOSTNAME);
 	if(basedn == NULL) basedn = strdup(BASEDN);
 	if(filter == NULL) filter = strdup(FILTER);
+	if(nullstr == NULL) nullstr = strdup(DEFAULT_NULL);
 	if(array_delimiter == NULL) array_delimiter = strdup("|");
 	if(attribute_delimiter == NULL) attribute_delimiter = strdup("\t");
 	if(password != NULL) berval_password = ber_bvstrdup(password);
@@ -455,13 +462,20 @@ int main( int argc, char **argv )
 							if(first_in_array == true) first_in_array = false;
 							//else fputs(array_delimiter, stream);
 							else fputs(array_delimiter, stream);
-							_cleanup_carr_ char ** step = (char**)calloc(5, sizeof(char*));
-							step[0] = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
-							step[1] = str_replace(step[0], "\"", "\"\"\"\"");
-							step[2] = str_replace(step[1], "\n", "\\n");
-							step[3] = str_replace(step[2], attribute_delimiter, quoted_attribute_delimiter);
-							fputs(step[3], stream);
-							//fputs(vals[ vi ]->bv_val, stream);
+							if(vals[ vi ]->bv_val == NULL)
+							{
+								fputs(nullstr, stream);
+							}
+							else
+							{
+								_cleanup_carr_ char ** step = (char**)calloc(5, sizeof(char*));
+								step[0] = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
+								step[1] = str_replace(step[0], "\"", "\"\"\"\"");
+								step[2] = str_replace(step[1], "\n", "\\n");
+								step[3] = str_replace(step[2], attribute_delimiter, quoted_attribute_delimiter);
+								fputs(step[3], stream);
+								//fputs(vals[ vi ]->bv_val, stream);
+							}
 
 						}
 						ber_bvecfree(vals);
