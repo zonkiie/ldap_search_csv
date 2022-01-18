@@ -169,7 +169,7 @@ typedef struct {
 	char * quotation_escape;
 } quote_strings;
 
-char * quote_string(const char *str, quote_string * quot)
+char * quote_string(const char *str, quote_strings * quot)
 {
 	
 }
