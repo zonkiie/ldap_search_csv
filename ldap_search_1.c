@@ -604,8 +604,9 @@ int main( int argc, char **argv )
 
 	}
 	fflush(stream);
-	if(!no_output) puts(buf);
+	//if(!no_output) puts(buf);
 	//if(!no_output) fwrite(buf, sizeof(char*), size, stdout);
+	if(!no_output) printf("%s", buf);
 
 	/* Disconnect when done. */
 
