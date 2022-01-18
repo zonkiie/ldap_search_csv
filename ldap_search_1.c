@@ -160,6 +160,20 @@ char * str_replace(const char *str, const char *search, const char *replace)
 	return retstr;
 }
 
+typedef struct {
+	char * attribute_delimiter;
+	char * array_delimiter;
+	char * null_string;
+	char * tab_string;
+	char * linefeed_quot;
+	char * quotation_escape;
+} quote_strings;
+
+char * quote_string(const char *str, quote_string * quot)
+{
+	
+}
+
 
 int main( int argc, char **argv )
 {
@@ -472,7 +486,6 @@ int main( int argc, char **argv )
 								//else fputs(array_delimiter, stream);
 								else fputs(array_delimiter, stream);
 								if(!strcmp(vals[ vi ]->bv_val, "") && debug) fputs("empty string found!", stderr);
-								fprintf(stderr, "Val: %s\n", vals[ vi ]->bv_val);
 								_cleanup_carr_ char ** step = (char**)calloc(5, sizeof(char*));
 								step[0] = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
 								step[1] = str_replace(step[0], "\"", "\"\"\"\"");
