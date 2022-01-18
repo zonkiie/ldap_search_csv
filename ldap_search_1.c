@@ -404,9 +404,8 @@ int main( int argc, char **argv )
 	while ( !finished )
 	{
 		rc = ldap_result( ld, msgid, LDAP_MSG_ONE, &zerotime, &res );
-		if(debug) fprintf(stderr, "rc: %d\n", rc);
+		//if(debug) fprintf(stderr, "rc: %d\n", rc);
 		
-
 		switch( rc ) {
 			case -1:
 				fprintf( stderr, "ldap_result: %s\n", ldap_err2string( rc ) );
