@@ -472,6 +472,7 @@ int main( int argc, char **argv )
 								//else fputs(array_delimiter, stream);
 								else fputs(array_delimiter, stream);
 								if(!strcmp(vals[ vi ]->bv_val, "") && debug) fputs("empty string found!", stderr);
+								fprintf(stderr, "Val: %s\n", vals[ vi ]->bv_val);
 								_cleanup_carr_ char ** step = (char**)calloc(5, sizeof(char*));
 								step[0] = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
 								step[1] = str_replace(step[0], "\"", "\"\"\"\"");
