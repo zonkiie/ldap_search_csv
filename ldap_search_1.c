@@ -156,6 +156,7 @@ void free_quote_strings(quote_strings ** quot)
 	if((*quot)->tab_string) free_cstr(&((*quot)->tab_string));
 	if((*quot)->linefeed_quot) free_cstr(&((*quot)->linefeed_quot));
 	if((*quot)->quotation_escape) free_cstr(&((*quot)->quotation_escape));
+	(*quot) = NULL;
 }
 
 char * str_replace(const char *str, const char *search, const char *replace)
