@@ -34,6 +34,16 @@
 #define _cleanup_file_ __attribute((cleanup(free_file)))
 #define _cleanup_carr_ __attribute((cleanup(free_carr_n)))
 #define _cleanup_berval_ __attribute((cleanup(free_berval)))
+#define _cleanup_quote_strings_ __attribute((cleanup(free_quote_strings)))
+
+typedef struct {
+	char * attribute_delimiter;
+	char * array_delimiter;
+	char * null_string;
+	char * tab_string;
+	char * linefeed_quot;
+	char * quotation_escape;
+} quote_strings;
 
 void free_cstr(char ** str)
 {
@@ -137,6 +147,17 @@ void free_file(FILE** file)
 	*file = NULL;
 }
 
+void free_quote_strings(quote_strings ** quot)
+{
+	if(quot == NULL || *quot == NULL) return;
+	if((*quot)->attribute_delimiter) free_cstr(&((*quot)->attribute_delimiter));
+	if((*quot)->array_delimiter) free_cstr(&((*quot)->array_delimiter));
+	if((*quot)->null_string) free_cstr(&((*quot)->null_string));
+	if((*quot)->tab_string) free_cstr(&((*quot)->tab_string));
+	if((*quot)->linefeed_quot) free_cstr(&((*quot)->linefeed_quot));
+	if((*quot)->quotation_escape) free_cstr(&((*quot)->quotation_escape));
+}
+
 char * str_replace(const char *str, const char *search, const char *replace)
 {
 	if(str == NULL) return NULL;
@@ -160,18 +181,19 @@ char * str_replace(const char *str, const char *search, const char *replace)
 	return retstr;
 }
 
-typedef struct {
-	char * attribute_delimiter;
-	char * array_delimiter;
-	char * null_string;
-	char * tab_string;
-	char * linefeed_quot;
-	char * quotation_escape;
-} quote_strings;
-
 char * quote_string(const char *str, quote_strings * quot)
 {
+	_cleanup_cstr_ char * quoted_array_delimiter;
+	_cleanup_cstr_ char * quoted_attribute_delimiter;
+	asprintf(&quoted_array_delimiter, "\\%s", quot->array_delimiter);
+	asprintf(&quoted_attribute_delimiter, "\\%s", quot->attribute_delimiter);
 	
+	_cleanup_carr_ char ** step = (char**)calloc(10, sizeof(char*));
+	step[0] = str_replace(str, quot->array_delimiter, quoted_array_delimiter);
+	step[1] = str_replace(step[0], "\"", "\"\"\"\"");
+	step[2] = str_replace(step[1], "\n", "\\n");
+	step[3] = str_replace(step[2], quot->attribute_delimiter, quoted_attribute_delimiter);
+	return strdup(step[3]);
 }
 
 
