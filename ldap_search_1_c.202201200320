@@ -156,7 +156,6 @@ void free_quote_strings(quote_strings ** quot)
 	if((*quot)->tab_string) free_cstr(&((*quot)->tab_string));
 	if((*quot)->linefeed_quot) free_cstr(&((*quot)->linefeed_quot));
 	if((*quot)->quotation_escape) free_cstr(&((*quot)->quotation_escape));
-	free(*quot);
 	(*quot) = NULL;
 }
 
@@ -200,25 +199,11 @@ char * quote_string(const char *str, quote_strings * quot)
 
 bool in_array(char ** array, char * value)
 {
-	for(int i = 0; array[i] != NULL; i++)
-	{
-		if(!strcmp(array[i], value)) return true;
-	}
-	return false;
+	
 }
 
-/// returns true if value is added, false if value is already in array
-/// array must be big enough that one further value can be added.
-/// value is copied to the new position.
 bool add_to_unique_array(char *** array, char * value)
 {
-	int i = 0;
-	for(; (*array)[i] != NULL; i++)
-	{
-		if(!strcmp((*array)[i], value)) return false;
-	}
-	(*array)[i+1] = strdup(value);
-	return true;
 }
 
 
@@ -256,12 +241,12 @@ int main( int argc, char **argv )
 	_cleanup_cstr_ char *basedn = NULL;
 	_cleanup_cstr_ char *filter = NULL;
 	_cleanup_cstr_ char *configfile = NULL;
+	_cleanup_cstr_ char *array_delimiter = NULL;
+	_cleanup_cstr_ char *attribute_delimiter = NULL;
 	_cleanup_cstr_ char *attributes = NULL;
 	_cleanup_cstr_ char *uri = NULL;
+	_cleanup_cstr_ char *nullstr = NULL;
 	_cleanup_berval_ struct berval *berval_password = NULL;
-	
-	_cleanup_quote_strings_ quote_strings *quot_str = (quote_strings*)calloc(1, sizeof(quote_strings));
-	if(quot_str == NULL) abort();
 	
 	_cleanup_carr_ char **attributes_array = NULL;
 	
@@ -312,9 +297,9 @@ int main( int argc, char **argv )
 				if(!strcmp(oname, "password")) password = strdup(optarg);
 				if(!strcmp(oname, "basedn")) basedn = strdup(optarg);
 				if(!strcmp(oname, "filter")) filter = strdup(optarg);
-				if(!strcmp(oname, "null")) quot_str->null_string = strdup(optarg);
-				if(!strcmp(oname, "array_delimiter")) quot_str->array_delimiter = strdup(optarg);
-				if(!strcmp(oname, "attribute_delimiter")) quot_str->attribute_delimiter = strdup(optarg);
+				if(!strcmp(oname, "null")) nullstr = strdup(optarg);
+				if(!strcmp(oname, "array_delimiter")) array_delimiter = strdup(optarg);
+				if(!strcmp(oname, "attribute_delimiter")) attribute_delimiter = strdup(optarg);
 				if(!strcmp(oname, "attributes")) attributes = strdup(optarg);
 				if(!strcmp(oname, "configfile")) configfile = strdup(optarg);
 				if(!strcmp(oname, "scope"))
@@ -372,10 +357,14 @@ int main( int argc, char **argv )
 	if(hostname == NULL) hostname = strdup(HOSTNAME);
 	if(basedn == NULL) basedn = strdup(BASEDN);
 	if(filter == NULL) filter = strdup(FILTER);
+	if(nullstr == NULL) nullstr = strdup(DEFAULT_NULL);
+	if(array_delimiter == NULL) array_delimiter = strdup("|");
+	if(attribute_delimiter == NULL) attribute_delimiter = strdup("\t");
 	if(password != NULL) berval_password = ber_bvstrdup(password);
-	if(quot_str->null_string == NULL) quot_str->null_string = strdup(DEFAULT_NULL);
-	if(quot_str->array_delimiter == NULL) quot_str->array_delimiter = strdup("|");
-	if(quot_str->attribute_delimiter == NULL) quot_str->attribute_delimiter = strdup("\t");
+	_cleanup_cstr_ char * quoted_array_delimiter;
+	_cleanup_cstr_ char * quoted_attribute_delimiter;
+	asprintf(&quoted_array_delimiter, "\\%s", array_delimiter);
+	asprintf(&quoted_attribute_delimiter, "\\%s", attribute_delimiter);
 	struct         timeval  zerotime;
 	zerotime.tv_sec = zerotime.tv_usec = 0L;
 	
@@ -436,6 +425,7 @@ int main( int argc, char **argv )
 	
 	/* Perform the search operation. */
 
+	//rc = ldap_search_ext_s( ld, basedn, scope, filter, attributes_array, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &res );
 	rc = ldap_search_ext( ld, basedn, scope, filter, attributes_array, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &msgid );
 
 	if ( rc != LDAP_SUCCESS ) {
@@ -467,7 +457,6 @@ int main( int argc, char **argv )
 				fprintf( stderr, "ldap_result: %s\n", ldap_err2string( rc ) );
 				return( 1 );
 			case 0:
-				if(debug) fprintf(stderr, "Line: %d - Break\n", __LINE__);
 				break;
 
 			/* If the result was an entry found by the search, get and print the attributes and values of the entry. */
@@ -493,7 +482,7 @@ int main( int argc, char **argv )
 				{
 					for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
 						if(first_in_row) first_in_row = false;
-						else fputs(quot_str->attribute_delimiter, stream);
+						else fputs(attribute_delimiter, stream);
 						fputs(a, stream);
 						ldap_memfree( a );
 					}
@@ -505,7 +494,7 @@ int main( int argc, char **argv )
 				first_in_row = true;
 				for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {	
 					if(first_in_row) first_in_row = false;
-					else fputs(quot_str->attribute_delimiter, stream);
+					else fputs(attribute_delimiter, stream);
 					/* Get and print all values for each attribute. */
 					if(debug) fprintf(stderr, "attrib: %s\n", a);
 					struct berval **vals = NULL;
@@ -517,8 +506,8 @@ int main( int argc, char **argv )
 						if(debug) fprintf(stderr, "ldap_count_values_len(vals): %d\n", ldap_count_values_len(vals));
 						if(ldap_count_values_len(vals) == 0)
 						{
-							if(debug) fprintf(stderr, "Nullstring found! Line: %d", __LINE__);
-							fputs(quot_str->null_string, stream);
+							if(debug) fputs("Nullstring found!", stderr);
+							fputs(nullstr, stream);
 						}
 						else
 						{
@@ -527,10 +516,14 @@ int main( int argc, char **argv )
 								//printf( "%s: %s\n", a, vals[ vi ]->bv_val );
 								if(first_in_array == true) first_in_array = false;
 								//else fputs(array_delimiter, stream);
-								else fputs(quot_str->array_delimiter, stream);
+								else fputs(array_delimiter, stream);
 								if(!strcmp(vals[ vi ]->bv_val, "") && debug) fputs("empty string found!", stderr);
-								_cleanup_cstr_ char * quoted_val = quote_string(vals[ vi ]->bv_val, quot_str);
-								fputs(quoted_val, stream);
+								_cleanup_carr_ char ** step = (char**)calloc(5, sizeof(char*));
+								step[0] = str_replace(vals[ vi ]->bv_val, array_delimiter, quoted_array_delimiter);
+								step[1] = str_replace(step[0], "\"", "\"\"\"\"");
+								step[2] = str_replace(step[1], "\n", "\\n");
+								step[3] = str_replace(step[2], attribute_delimiter, quoted_attribute_delimiter);
+								fputs(step[3], stream);
 								//fputs(vals[ vi ]->bv_val, stream);
 
 							}
@@ -539,8 +532,8 @@ int main( int argc, char **argv )
 					}
 					else
 					{
-							if(debug) fprintf(stderr, "Nullstring found! Line: %d", __LINE__);
-						fputs(quot_str->null_string, stream);
+						if(debug) fputs("Nullstring found!", stderr);
+						fputs(nullstr, stream);
 					}
 					
 					ldap_memfree( a );
