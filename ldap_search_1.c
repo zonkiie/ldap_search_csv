@@ -36,6 +36,8 @@
 #define _cleanup_berval_ __attribute((cleanup(free_berval)))
 #define _cleanup_quote_strings_ __attribute((cleanup(free_quote_strings)))
 
+struct         timeval  zerotime = {.tv_sec = 0L, .tv_usec = 0L};
+
 typedef struct {
 	char * attribute_delimiter;
 	char * array_delimiter;
@@ -217,8 +219,62 @@ bool add_to_unique_array(char *** array, char * value)
 	{
 		if(!strcmp((*array)[i], value)) return false;
 	}
-	(*array)[i+1] = strdup(value);
+	(*array)[i] = strdup(value);
 	return true;
+}
+
+char ** get_attributes_from_ldap(LDAP *ld, char * basedn, int scope, char * filter)
+{
+	int finished = 0, msgid = 0, i = 0;
+	
+	char **attributes_array = (char**)calloc(sizeof(char*), 512);
+	_cleanup_cstr_ char *matched_msg = NULL, *error_msg = NULL;
+	_cleanup_ldap_message_ LDAPMessage *res = NULL;
+	BerElement *ber;
+	/* Perform the search operation. */
+	int rc = ldap_search_ext( ld, basedn, scope, filter, NULL, 1, NULL, NULL, NULL, LDAP_NO_LIMIT, &msgid );
+
+	if ( rc != LDAP_SUCCESS ) {
+
+		//fprintf( stderr, "ldap_search_ext_s: %s\n", ldap_err2string( rc ) );
+
+		if ( error_msg != NULL && *error_msg != '\0' ) {
+
+			fprintf( stderr, "%s\n", error_msg );
+
+		}
+
+		if ( matched_msg != NULL && *matched_msg != '\0' ) {
+
+			fprintf( stderr, "Part of the DN that matches an existing entry: %s\n", matched_msg );
+
+		}
+
+		free_carr_n(&attributes_array);
+		return( NULL );
+		
+
+	}
+	while(!finished)
+	{
+		rc = ldap_result( ld, msgid, LDAP_MSG_ONE, &zerotime, &res );
+		switch( rc ) {
+			case -1:
+				return( NULL );
+			case 0:
+				break;
+			case LDAP_RES_SEARCH_ENTRY:
+				for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
+					add_to_unique_array(&attributes_array, a);
+					ldap_memfree( a );
+				}
+				ber_free( ber, 0 );
+			case LDAP_RES_SEARCH_RESULT:
+				finished = true;
+			
+		}
+	}
+	return attributes_array;
 }
 
 
@@ -235,6 +291,8 @@ int main( int argc, char **argv )
 	static int debug = false;
 	
 	static int use_sasl = false;
+	
+	static int attributes_only = false;
 	
 	bool first_in_row = false, header_printed = false;
 	
@@ -282,9 +340,10 @@ int main( int argc, char **argv )
 			{"debug", no_argument, &debug, 1},
 			{"no_output", no_argument, &no_output, 1},
 			{"use_sasl", no_argument, &use_sasl, 1},
+			{"attributes_only", no_argument, &attributes_only, 1},
 			{"port", required_argument, 0, 0},
 			{"hostname", required_argument, 0, 0},
-			{"null", required_argument, 0, 0},
+			{"nullstring", required_argument, 0, 0},
 			{"uri", required_argument, 0, 0},
 			{"username", required_argument, 0, 0},
 			{"password", required_argument, 0, 0},
@@ -312,7 +371,7 @@ int main( int argc, char **argv )
 				if(!strcmp(oname, "password")) password = strdup(optarg);
 				if(!strcmp(oname, "basedn")) basedn = strdup(optarg);
 				if(!strcmp(oname, "filter")) filter = strdup(optarg);
-				if(!strcmp(oname, "null")) quot_str->null_string = strdup(optarg);
+				if(!strcmp(oname, "nullstring")) quot_str->null_string = strdup(optarg);
 				if(!strcmp(oname, "array_delimiter")) quot_str->array_delimiter = strdup(optarg);
 				if(!strcmp(oname, "attribute_delimiter")) quot_str->attribute_delimiter = strdup(optarg);
 				if(!strcmp(oname, "attributes")) attributes = strdup(optarg);
@@ -355,11 +414,12 @@ int main( int argc, char **argv )
 		puts("--port=<port>: connect to port <port>");
 		puts("--uri=<uri>: use <uri> as target");
 		puts("--basedn=<basedn>: use base dn <basedn>");
-		puts("--null=<null>: define nullstring (Default:" DEFAULT_NULL ")");
+		puts("--nullstring=<null>: define nullstring (Default:" DEFAULT_NULL ")");
 		puts("--print_header: print header of column");
 		puts("--debug: print debug messages");
 		puts("--no_output: print no output (Usable for debugging)");
 		puts("--use_sasl: use sasl for connection (experimental!)");
+		puts("--attributes_only: fetch only attributes, no values");
 		puts("--filter=<filter>: apply the filter <filter>");
 		puts("--scope=<scope>: use one of the scopes: LDAP_SCOPE_BASE, LDAP_SCOPE_ONELEVEL, LDAP_SCOPE_SUBTREE, LDAP_SCOPE_CHILDREN - Important: Give the scope!");
 		puts("--array_delimiter=<delimiter>: use the delimiter <delimiter> to separate array entries");
@@ -376,8 +436,6 @@ int main( int argc, char **argv )
 	if(quot_str->null_string == NULL) quot_str->null_string = strdup(DEFAULT_NULL);
 	if(quot_str->array_delimiter == NULL) quot_str->array_delimiter = strdup("|");
 	if(quot_str->attribute_delimiter == NULL) quot_str->attribute_delimiter = strdup("\t");
-	struct         timeval  zerotime;
-	zerotime.tv_sec = zerotime.tv_usec = 0L;
 	
 	if(attributes)
 	{
@@ -434,8 +492,21 @@ int main( int argc, char **argv )
 
 	}
 	
-	/* Perform the search operation. */
+	if(attributes == NULL)
+	{
+		attributes_array = get_attributes_from_ldap(ld, basedn, scope, filter);
+		if(attributes_only)
+		{
+			for(int i = 0; attributes_array[i] != NULL; i++)
+			{
+				printf("%s,", attributes_array[i]);
+			}
+			printf("\n");
+			exit(0);
+		}
+	}
 
+	/* Perform the search operation. */
 	rc = ldap_search_ext( ld, basedn, scope, filter, attributes_array, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &msgid );
 
 	if ( rc != LDAP_SUCCESS ) {
@@ -491,26 +562,31 @@ int main( int argc, char **argv )
 				first_in_row = true;
 				if(!header_printed && print_header)
 				{
-					for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
+					//for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
+					for(char ** a = attributes_array; *a != NULL; *a++) {
 						if(first_in_row) first_in_row = false;
 						else fputs(quot_str->attribute_delimiter, stream);
-						fputs(a, stream);
-						ldap_memfree( a );
+						fputs(*a, stream);
+						//fputs(a, stream);
+						//ldap_memfree( a );
 					}
 					fputs(LF, stream);
 					header_printed = true;
-					ber_free( ber, 0 );
+					//ber_free( ber, 0 );
 				}
 				
 				first_in_row = true;
-				for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {	
+				//for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {	
+				for(char ** a = attributes_array; *a != NULL; *a++) {
 					if(first_in_row) first_in_row = false;
 					else fputs(quot_str->attribute_delimiter, stream);
 					/* Get and print all values for each attribute. */
-					if(debug) fprintf(stderr, "attrib: %s\n", a);
+					//if(debug) fprintf(stderr, "attrib: %s\n", a);
+					if(debug) fprintf(stderr, "attrib: %s\n", *a);
 					struct berval **vals = NULL;
 					
-					if((vals = ldap_get_values_len(ld, res, a)) != NULL)
+					//if((vals = ldap_get_values_len(ld, res, a)) != NULL)
+					if((vals = ldap_get_values_len(ld, res, *a)) != NULL)
 					{
 						bool first_in_array = true;
 						
@@ -539,19 +615,19 @@ int main( int argc, char **argv )
 					}
 					else
 					{
-							if(debug) fprintf(stderr, "Nullstring found! Line: %d", __LINE__);
+						if(debug) fprintf(stderr, "Nullstring found! Line: %d", __LINE__);
 						fputs(quot_str->null_string, stream);
 					}
 					
-					ldap_memfree( a );
+					//ldap_memfree( a );
 
 				}
 
-				if ( ber != NULL ) {
+				/*if ( ber != NULL ) {
 
 					ber_free( ber, 0 );
 
-				}
+				}*/
 
 				//printf( "\n" );
 				fputs(LF, stream);
