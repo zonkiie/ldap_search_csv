@@ -7,6 +7,7 @@
 #include <malloc.h>
 #include <search.h>
 #include <ldap.h>
+#include <sasl/sasl.h>
 
 /* Change these as needed. */
 
@@ -65,6 +66,7 @@ void free_ldap(LDAP **ldap)
 	if(*ldap == NULL) return;
 	ldap_unbind_ext_s( *ldap , NULL, NULL);
 	*ldap = NULL;
+	sasl_done();
 }
 
 void free_ldap_message(LDAPMessage **message)

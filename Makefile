@@ -2,7 +2,7 @@ CC := gcc
 CFLAGS := -g -std=c11 -D_GNU_SOURCE -D_XOPEN_SOURCE
 #-DLDAP_DEPRECATED
 LDFLAGS := 
-LDLIBS := -lldap -llber
+LDLIBS := -lldap -llber -lsasl2
 PROGS := ldap_search_1 ldap_search_1_sync
 C_SOURCE_FILES := $(*.c)
 OBJECT_FILES := $(C_SOURCE_FILES:.c=.o)
