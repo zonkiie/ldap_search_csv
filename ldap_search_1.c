@@ -296,6 +296,8 @@ int main( int argc, char **argv )
 	
 	static int attributes_only = false;
 	
+	static int print_referals = false;
+	
 	bool first_in_row = false, header_printed = false;
 	
 	int version, msgid, rc, parse_rc, finished = 0, msgtype, num_entries = 0, num_refs = 0;
@@ -333,8 +335,6 @@ int main( int argc, char **argv )
 
 	char *dn, *matched_msg = NULL, *error_msg = NULL;
 	
-	char **referrals;
-	
 	while(1)
 	{
 		static struct option long_options[] = {
@@ -343,6 +343,7 @@ int main( int argc, char **argv )
 			{"no_output", no_argument, &no_output, 1},
 			{"use_sasl", no_argument, &use_sasl, 1},
 			{"attributes_only", no_argument, &attributes_only, 1},
+			{"print_referals", no_argument, &print_referals, 1},
 			{"port", required_argument, 0, 0},
 			{"hostname", required_argument, 0, 0},
 			{"nullstring", required_argument, 0, 0},
@@ -422,6 +423,7 @@ int main( int argc, char **argv )
 		puts("--no_output: print no output (Usable for debugging)");
 		puts("--use_sasl: use sasl for connection (experimental!)");
 		puts("--attributes_only: fetch only attributes, no values");
+		puts("--print_referals: print referals if available");
 		puts("--filter=<filter>: apply the filter <filter>");
 		puts("--scope=<scope>: use one of the scopes: LDAP_SCOPE_BASE, LDAP_SCOPE_ONELEVEL, LDAP_SCOPE_SUBTREE, LDAP_SCOPE_CHILDREN - Important: Give the scope!");
 		puts("--array_delimiter=<delimiter>: use the delimiter <delimiter> to separate array entries");
@@ -646,29 +648,28 @@ int main( int argc, char **argv )
 				/* The server sent a search reference encountered during the search operation. */
 
 				/* Parse the result and print the search references. Ideally, rather than print them out, you would follow the references. */
+				{
+					_cleanup_carr_ char **referrals;
 
-				// parse_rc = ldap_parse_reference( ld, res, &referrals, NULL, 0 );
-				parse_rc = ldap_parse_reference( ld, res, &referrals, NULL, 1 );
+					// parse_rc = ldap_parse_reference( ld, res, &referrals, NULL, 0 );
+					parse_rc = ldap_parse_reference( ld, res, &referrals, NULL, 1 );
 
-				if ( parse_rc != LDAP_SUCCESS ) {
+					if ( parse_rc != LDAP_SUCCESS ) {
 
-					fprintf( stderr, "ldap_parse_result: %s\n", ldap_err2string( parse_rc ) );
+						fprintf( stderr, "ldap_parse_result: %s\n", ldap_err2string( parse_rc ) );
 
-					return( 1 );
-
-				}
-
-				if ( referrals != NULL ) {
-
-					for ( int ri = 0; referrals[ ri ] != NULL; ri++ ) {
-
-						printf( "Search reference: %s\n\n", referrals[ ri ] );
+						return( 1 );
 
 					}
 
-					//ldap_value_free( referrals );
-					free_carr_n(&referrals);
+					if ( referrals != NULL ) {
 
+						for ( int ri = 0; referrals[ ri ] != NULL; ri++ ) {
+
+							if(print_referals) printf( "Search reference: %s\n\n", referrals[ ri ] );
+
+						}
+					}
 				}
 
 				break;
