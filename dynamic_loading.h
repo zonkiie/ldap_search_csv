@@ -21,7 +21,12 @@ void (*ber_free)(BerElement *ber, int freebuf);
 void (*ber_bvfree)(struct berval *bv);
 struct berval *(*ber_bvstrdup)(const char *str);
 void (*ber_bvecfree)(struct berval **bvec);
+extern void *dlhandle;
+extern char *ldap_lib_path;
 
+void load_dynfunctions();
+void cleanup_ldap_dynfunctions();
+void init_ldap_dynfunctions();
 
 
 #endif
