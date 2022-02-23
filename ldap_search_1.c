@@ -27,6 +27,7 @@
 #define LF "\n"
 
 #define DEFAULT_NULL "(null)"
+#define DEFAULT_TRIM_CHARS " \r\n"
 
 #define _cleanup_cstr_ __attribute((cleanup(free_cstr)))
 #define _cleanup_ldap_ __attribute((cleanup(free_ldap)))
@@ -279,6 +280,27 @@ char ** get_attributes_from_ldap(LDAP *ld, char * basedn, int scope, char * filt
 	return attributes_array;
 }
 
+bool char_charlist(char c, char *charlist)
+{
+	for(int i = 0; i < strlen(charlist); i++)
+	{
+		if(charlist[i] == c) return true;
+	}
+	return false;
+}
+
+char *trim(char *string, char *trimchars)
+{
+	if(!trimchars || strlen(trimchars) == 0) return string;
+	// ltrim
+	int start = 0;
+	while(char_charlist(string[start], trimchars)) start++;
+	// rtrim
+	int copylen = strlen(string + start);
+	while(char_charlist((string + start)[copylen], trimchars)) copylen--;
+	return strndup((string + start), copylen);
+}
+
 
 int main( int argc, char **argv )
 {
@@ -297,6 +319,8 @@ int main( int argc, char **argv )
 	static int attributes_only = false;
 	
 	static int print_referals = false;
+	
+	static int trim_strings = false;
 	
 	bool first_in_row = false, header_printed = false;
 	
@@ -320,6 +344,7 @@ int main( int argc, char **argv )
 	_cleanup_cstr_ char *configfile = NULL;
 	_cleanup_cstr_ char *attributes = NULL;
 	_cleanup_cstr_ char *uri = NULL;
+	_cleanup_cstr_ char *trim_chars = NULL;
 	_cleanup_berval_ struct berval *berval_password = NULL;
 	
 	_cleanup_quote_strings_ quote_strings *quot_str = (quote_strings*)calloc(1, sizeof(quote_strings));
@@ -357,6 +382,8 @@ int main( int argc, char **argv )
 			{"attribute_delimiter", required_argument, 0, 0},
 			{"attributes", required_argument, 0, 0},
 			{"configfile", required_argument, 0, 0},
+			{"trim_chars", required_argument, 0, 0},
+			{"trim_strings", no_argument, &trim_strings, 1},
 			{"print_header", no_argument, &print_header, 1},
 			{0, 0, 0, 0},
 		};
@@ -378,6 +405,7 @@ int main( int argc, char **argv )
 				if(!strcmp(oname, "array_delimiter")) quot_str->array_delimiter = strdup(optarg);
 				if(!strcmp(oname, "attribute_delimiter")) quot_str->attribute_delimiter = strdup(optarg);
 				if(!strcmp(oname, "attributes")) attributes = strdup(optarg);
+				if(!strcmp(oname, "trim_chars")) trim_chars = strdup(optarg);
 				if(!strcmp(oname, "configfile")) configfile = strdup(optarg);
 				if(!strcmp(oname, "scope"))
 				{
@@ -424,6 +452,8 @@ int main( int argc, char **argv )
 		puts("--use_sasl: use sasl for connection (experimental!)");
 		puts("--attributes_only: fetch only attributes, no values");
 		puts("--print_referals: print referals if available");
+		puts("--trim_strings: trim strings");
+		puts("--trim_chars=<chars>: chars to bei used to be trimmed away");
 		puts("--filter=<filter>: apply the filter <filter>");
 		puts("--scope=<scope>: use one of the scopes: LDAP_SCOPE_BASE, LDAP_SCOPE_ONELEVEL, LDAP_SCOPE_SUBTREE, LDAP_SCOPE_CHILDREN - Important: Give the scope!");
 		puts("--array_delimiter=<delimiter>: use the delimiter <delimiter> to separate array entries");
@@ -445,6 +475,8 @@ int main( int argc, char **argv )
 	{
 		str_split(&attributes_array, attributes, ",");
 	}
+	
+	if(!trim_chars && trim_strings) trim_chars = strdup(DEFAULT_TRIM_CHARS);
 	
 	if(uri == NULL) asprintf(&uri, "ldap://%s:%d", hostname, port);
 	
@@ -609,8 +641,11 @@ int main( int argc, char **argv )
 								//else fputs(array_delimiter, stream);
 								else fputs(quot_str->array_delimiter, stream);
 								if(!strcmp(vals[ vi ]->bv_val, "") && debug) fputs("empty string found!", stderr);
-								_cleanup_cstr_ char * quoted_val = quote_string(vals[ vi ]->bv_val, quot_str);
-								fputs(quoted_val, stream);
+								//_cleanup_cstr_ char * quoted_val = quote_string(vals[ vi ]->bv_val, quot_str);
+								_cleanup_cstr_ char *trimmed_str = trim(vals[ vi ]->bv_val, trim_chars);
+								fprintf(stderr, "trim_chars: %s, trimmed_str: %s\n", trim_chars, trimmed_str);
+								//_cleanup_cstr_ char * quoted_val = quote_string(trimmed_str, quot_str);
+								//fputs(quoted_val, stream);
 								//fputs(vals[ vi ]->bv_val, stream);
 
 							}
