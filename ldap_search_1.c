@@ -587,17 +587,16 @@ int main( int argc, char **argv )
 
 				/* Get and print the DN of the entry. */
 
-				if (debug && ( dn = ldap_get_dn( ld, res )) != NULL) {
-
-					fprintf(stderr, "dn: %s\n", dn );
-
-					ldap_memfree( dn );
-
-				}
 				_cleanup_cstr_ char *entrydn = NULL;
 				if((dn = ldap_get_dn(ld, res)) != NULL) {
 					entrydn = strdup(dn);
 					ldap_memfree(dn);
+				}
+
+				if (debug && entrydn != NULL) {
+
+					fprintf(stderr, "dn: %s\n", dn );
+
 				}
 
 				/* Iterate through each attribute in the entry. */
