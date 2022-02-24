@@ -595,7 +595,7 @@ int main( int argc, char **argv )
 
 				if (debug && entrydn != NULL) {
 
-					fprintf(stderr, "dn: %s\n", dn );
+					fprintf(stderr, "dn: %s\n", entrydn );
 
 				}
 
