@@ -594,6 +594,11 @@ int main( int argc, char **argv )
 					ldap_memfree( dn );
 
 				}
+				_cleanup_cstr_ char *entrydn = NULL;
+				if((dn = ldap_get_dn(ld, res)) != NULL) {
+					entrydn = strdup(dn);
+					ldap_memfree(dn);
+				}
 
 				/* Iterate through each attribute in the entry. */
 				first_in_row = true;
@@ -643,8 +648,16 @@ int main( int argc, char **argv )
 								else fputs(quot_str->array_delimiter, stream);
 								if(!strcmp(vals[ vi ]->bv_val, "") && debug) fputs("empty string found!", stderr);
 								//_cleanup_cstr_ char * quoted_val = quote_string(vals[ vi ]->bv_val, quot_str);
+								if(vals[ vi ]->bv_val == NULL && !strcasecmp(*a, "dn") && entrydn != NULL)
+								{
+									_cleanup_cstr_ char *trimmed_str = trim(entrydn, trim_chars);
+									_cleanup_cstr_ char *quoted_val = quote_string(trimmed_str, quot_str);
+									fputs(quoted_val, stream);
+									continue;
+								}
+								//_cleanup_cstr_ char *trimmed_str = trim(vals[ vi ]->bv_val, trim_chars);
 								_cleanup_cstr_ char *trimmed_str = trim(vals[ vi ]->bv_val, trim_chars);
-								_cleanup_cstr_ char * quoted_val = quote_string(trimmed_str, quot_str);
+								_cleanup_cstr_ char *quoted_val = quote_string(trimmed_str, quot_str);
 								fputs(quoted_val, stream);
 								//fputs(vals[ vi ]->bv_val, stream);
 
