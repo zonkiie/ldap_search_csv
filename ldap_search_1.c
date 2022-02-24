@@ -199,8 +199,9 @@ char * quote_string(const char *str, quote_strings * quot)
 	step[0] = str_replace(str, quot->array_delimiter, quoted_array_delimiter);
 	step[1] = str_replace(step[0], "\"", "\"\"\"\"");
 	step[2] = str_replace(step[1], "\n", "\\n");
-	step[3] = str_replace(step[2], quot->attribute_delimiter, quoted_attribute_delimiter);
-	return strdup(step[3]);
+	step[3] = str_replace(step[2], "\r", "\\r");
+	step[4] = str_replace(step[3], quot->attribute_delimiter, quoted_attribute_delimiter);
+	return strdup(step[4]);
 }
 
 bool in_array(char ** array, char * value)
@@ -291,13 +292,13 @@ bool char_charlist(char c, char *charlist)
 
 char *trim(char *string, char *trimchars)
 {
-	if(!trimchars || strlen(trimchars) == 0) return string;
+	if(!trimchars || strlen(trimchars) == 0) return strdup(string);
 	// ltrim
 	int start = 0;
 	while(char_charlist(string[start], trimchars)) start++;
 	// rtrim
 	int copylen = strlen(string + start);
-	while(char_charlist((string + start)[copylen], trimchars)) copylen--;
+	while(char_charlist((string + start)[copylen - 1], trimchars)) copylen--;
 	return strndup((string + start), copylen);
 }
 
@@ -643,9 +644,8 @@ int main( int argc, char **argv )
 								if(!strcmp(vals[ vi ]->bv_val, "") && debug) fputs("empty string found!", stderr);
 								//_cleanup_cstr_ char * quoted_val = quote_string(vals[ vi ]->bv_val, quot_str);
 								_cleanup_cstr_ char *trimmed_str = trim(vals[ vi ]->bv_val, trim_chars);
-								fprintf(stderr, "trim_chars: %s, trimmed_str: %s\n", trim_chars, trimmed_str);
-								//_cleanup_cstr_ char * quoted_val = quote_string(trimmed_str, quot_str);
-								//fputs(quoted_val, stream);
+								_cleanup_cstr_ char * quoted_val = quote_string(trimmed_str, quot_str);
+								fputs(quoted_val, stream);
 								//fputs(vals[ vi ]->bv_val, stream);
 
 							}
