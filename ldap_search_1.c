@@ -646,7 +646,7 @@ int main( int argc, char **argv )
 								if(first_in_array == true) first_in_array = false;
 								//else fputs(array_delimiter, stream);
 								else fputs(quot_str->array_delimiter, stream);
-								if(!strcmp(vals[ vi ]->bv_val, "") && debug) fputs("empty string found!", stderr);
+								if(!strcmp(vals[ vi ]->bv_val, "") && debug) fputs("empty string found in %s!", stderr, *a);
 								//_cleanup_cstr_ char * quoted_val = quote_string(vals[ vi ]->bv_val, quot_str);
 								if(vals[ vi ]->bv_val == NULL && !strcasecmp(*a, "dn") && entrydn != NULL)
 								{
