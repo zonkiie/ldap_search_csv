@@ -652,6 +652,7 @@ int main( int argc, char **argv )
 								{
 									_cleanup_cstr_ char *trimmed_str = trim(entrydn, trim_chars);
 									_cleanup_cstr_ char *quoted_val = quote_string(trimmed_str, quot_str);
+									fprintf(stderr, "quoted val for dn: %s, dn: %s\n", quoted_val, entrydn);
 									fputs(quoted_val, stream);
 									continue;
 								}
