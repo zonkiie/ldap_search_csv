@@ -298,7 +298,7 @@ char *trim(char *string, char *trimchars)
 	while(char_charlist(string[start], trimchars)) start++;
 	// rtrim
 	int copylen = strlen(string + start);
-	while(char_charlist((string + start)[copylen - 1], trimchars)) copylen--;
+	while(copylen > 1 && char_charlist((string + start)[copylen - 1], trimchars)) copylen--;
 	return strndup((string + start), copylen);
 }
 
