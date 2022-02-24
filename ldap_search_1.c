@@ -647,6 +647,7 @@ int main( int argc, char **argv )
 								else fputs(quot_str->array_delimiter, stream);
 								if(!strcmp(vals[ vi ]->bv_val, "") && debug) fprintf(stderr, "empty string found in %s!", *a);
 								//_cleanup_cstr_ char * quoted_val = quote_string(vals[ vi ]->bv_val, quot_str);
+								fprintf(stderr, "entry val: %s\n", vals[ vi ]->bv_val);
 								if(vals[ vi ]->bv_val == NULL && !strcasecmp(*a, "dn") && entrydn != NULL)
 								{
 									_cleanup_cstr_ char *trimmed_str = trim(entrydn, trim_chars);
