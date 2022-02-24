@@ -631,8 +631,8 @@ int main( int argc, char **argv )
 						_cleanup_cstr_ char *quoted_val = quote_string(trimmed_str, quot_str);
 						fputs(quoted_val, stream);
 						continue;
-
 					}
+					
 					struct berval **vals = NULL;
 					
 					//if((vals = ldap_get_values_len(ld, res, a)) != NULL)
