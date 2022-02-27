@@ -240,8 +240,6 @@ char ** get_attributes_from_ldap(LDAP *ld, char * basedn, int scope, char * filt
 
 	if ( rc != LDAP_SUCCESS ) {
 
-		//fprintf( stderr, "ldap_search_ext_s: %s\n", ldap_err2string( rc ) );
-
 		if ( error_msg != NULL && *error_msg != '\0' ) {
 
 			fprintf( stderr, "%s\n", error_msg );
