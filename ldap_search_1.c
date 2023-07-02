@@ -408,10 +408,10 @@ int main( int argc, char **argv )
 				if(!strcmp(oname, "configfile")) configfile = strdup(optarg);
 				if(!strcmp(oname, "scope"))
 				{
-					if(!strcasecmp(optarg, "LDAP_SCOPE_BASE")) scope = LDAP_SCOPE_BASE;
-					else if(!strcasecmp(optarg, "LDAP_SCOPE_ONELEVEL")) scope = LDAP_SCOPE_ONELEVEL;
-					else if(!strcasecmp(optarg, "LDAP_SCOPE_SUBTREE")) scope = LDAP_SCOPE_SUBTREE;
-					else if(!strcasecmp(optarg, "LDAP_SCOPE_CHILDREN")) scope = LDAP_SCOPE_CHILDREN;
+					if(!strcasecmp(optarg, "LDAP_SCOPE_BASE") || !strcasecmp(optarg, "BASE")) scope = LDAP_SCOPE_BASE;
+					else if(!strcasecmp(optarg, "LDAP_SCOPE_ONELEVEL") || !strcasecmp(optarg, "ONE")) scope = LDAP_SCOPE_ONELEVEL;
+					else if(!strcasecmp(optarg, "LDAP_SCOPE_SUBTREE") || !strcasecmp(optarg, "SUBTREE")) scope = LDAP_SCOPE_SUBTREE;
+					else if(!strcasecmp(optarg, "LDAP_SCOPE_CHILDREN") || !strcasecmp(optarg, "CHILDREN")) scope = LDAP_SCOPE_CHILDREN;
 					else abort();
 				}
 				break;
@@ -454,7 +454,7 @@ int main( int argc, char **argv )
 		puts("--trim_strings: trim strings");
 		puts("--trim_chars=<chars>: chars to bei used to be trimmed away");
 		puts("--filter=<filter>: apply the filter <filter>");
-		puts("--scope=<scope>: use one of the scopes: LDAP_SCOPE_BASE, LDAP_SCOPE_ONELEVEL, LDAP_SCOPE_SUBTREE, LDAP_SCOPE_CHILDREN - Important: Give the scope!");
+		puts("--scope=<scope>: use one of the scopes: LDAP_SCOPE_BASE, BASE, LDAP_SCOPE_ONELEVEL, ONE, LDAP_SCOPE_SUBTREE, SUBTREE, LDAP_SCOPE_CHILDREN, CHILDREEN - Important: Give the scope!");
 		puts("--array_delimiter=<delimiter>: use the delimiter <delimiter> to separate array entries");
 		puts("--attribute_delimiter=<delimiter>: use the delimiter <delimiter> to separate attributes");
 		puts("--attributes=<attributes>: csv list of queried attributes");
