@@ -90,7 +90,7 @@ void free_carr_n(char ***carr)
 {
     if(carr == NULL || *carr == NULL) return;
 	int size = get_carr_size(*carr);
-	for(int i = size - 1; i >= 0; i--) 
+	for(int i = size - 1; i >= 0; i--)
 	{
 		free((*carr)[i]);
 		(*carr)[i] = NULL;
@@ -194,7 +194,7 @@ char * quote_string(const char *str, quote_strings * quot)
 	_cleanup_cstr_ char * quoted_attribute_delimiter;
 	asprintf(&quoted_array_delimiter, "\\%s", quot->array_delimiter);
 	asprintf(&quoted_attribute_delimiter, "\\%s", quot->attribute_delimiter);
-	
+
 	_cleanup_carr_ char ** step = (char**)calloc(10, sizeof(char*));
 	step[0] = str_replace(str, quot->array_delimiter, quoted_array_delimiter);
 	step[1] = str_replace(step[0], "\"", "\"\"\"\"");
@@ -230,7 +230,7 @@ bool add_to_unique_array(char *** array, char * value)
 char ** get_attributes_from_ldap(LDAP *ld, char * basedn, int scope, char * filter)
 {
 	int finished = 0, msgid = 0, i = 0;
-	
+
 	char **attributes_array = (char**)calloc(sizeof(char*), 512);
 	_cleanup_cstr_ char *matched_msg = NULL, *error_msg = NULL;
 	_cleanup_ldap_message_ LDAPMessage *res = NULL;
@@ -254,7 +254,7 @@ char ** get_attributes_from_ldap(LDAP *ld, char * basedn, int scope, char * filt
 
 		free_carr_n(&attributes_array);
 		return( NULL );
-		
+
 
 	}
 	while(!finished)
@@ -273,7 +273,7 @@ char ** get_attributes_from_ldap(LDAP *ld, char * basedn, int scope, char * filt
 				ber_free( ber, 0 );
 			case LDAP_RES_SEARCH_RESULT:
 				finished = true;
-			
+
 		}
 	}
 	return attributes_array;
@@ -306,35 +306,35 @@ int main( int argc, char **argv )
 	int port = LDAP_PORT, option_index = 0, c = 0, scope = -1;
 	// https://stackoverflow.com/questions/59462003/getopt-long-using-flag-struct-member
 	static int show_help = 0;
-	
+
 	static int print_header = false;
-	
+
 	static int no_output = false;
-	
+
 	static int debug = false;
-	
+
 	static int use_sasl = false;
-	
+
 	static int attributes_only = false;
-	
+
 	static int print_referals = false;
-	
+
 	static int trim_strings = false;
-	
+
 	bool first_in_row = false, header_printed = false;
-	
+
 	int version, msgid, rc, parse_rc, finished = 0, msgtype, num_entries = 0, num_refs = 0;
 
 	_cleanup_ldap_ LDAP *ld = NULL;
 
 	_cleanup_ldap_message_ LDAPMessage *res = NULL;
-	
+
 	LDAPMessage *msg = NULL;
 
 	LDAPControl **serverctrls;
 
 	BerElement *ber;
-	
+
 	_cleanup_cstr_ char *username = NULL;
 	_cleanup_cstr_ char *password = NULL;
 	_cleanup_cstr_ char *hostname = NULL;
@@ -345,20 +345,20 @@ int main( int argc, char **argv )
 	_cleanup_cstr_ char *uri = NULL;
 	_cleanup_cstr_ char *trim_chars = NULL;
 	_cleanup_berval_ struct berval *berval_password = NULL;
-	
+
 	_cleanup_quote_strings_ quote_strings *quot_str = (quote_strings*)calloc(1, sizeof(quote_strings));
 	if(quot_str == NULL) abort();
-	
+
 	_cleanup_carr_ char **attributes_array = NULL;
-	
+
 	size_t size;
 	_cleanup_cstr_ char *buf;
-	
+
 	_cleanup_file_ FILE *stream = open_memstream (&buf, &size);
-	
+
 
 	char *dn, *matched_msg = NULL, *error_msg = NULL;
-	
+
 	while(1)
 	{
 		static struct option long_options[] = {
@@ -430,7 +430,7 @@ int main( int argc, char **argv )
 				configfile = strdup(optarg);
 				break;
 			}
-			
+
 			default:
 				abort();
 		}
@@ -460,7 +460,7 @@ int main( int argc, char **argv )
 		puts("--attributes=<attributes>: csv list of queried attributes");
 		exit(0);
 	}
-	
+
 	//initialize values with default values during testing
 	if(hostname == NULL) hostname = strdup(HOSTNAME);
 	if(basedn == NULL) basedn = strdup(BASEDN);
@@ -469,18 +469,18 @@ int main( int argc, char **argv )
 	if(quot_str->null_string == NULL) quot_str->null_string = strdup(DEFAULT_NULL);
 	if(quot_str->array_delimiter == NULL) quot_str->array_delimiter = strdup("|");
 	if(quot_str->attribute_delimiter == NULL) quot_str->attribute_delimiter = strdup("\t");
-	
+
 	if(attributes)
 	{
 		str_split(&attributes_array, attributes, ",");
 	}
-	
+
 	if(!trim_chars && trim_strings) trim_chars = strdup(DEFAULT_TRIM_CHARS);
-	
+
 	if(uri == NULL) asprintf(&uri, "ldap://%s:%d", hostname, port);
-	
+
 	/* Get a handle to an LDAP connection. */
-	
+
 	if((rc = ldap_initialize(&ld, uri)) != LDAP_SUCCESS)
 	{
 		fprintf( stderr, "ldap_set_option: %s\n", ldap_err2string( rc ) );
@@ -526,7 +526,7 @@ int main( int argc, char **argv )
 		return( 1 );
 
 	}
-	
+
 	if(attributes == NULL)
 	{
 		attributes_array = get_attributes_from_ldap(ld, basedn, scope, filter);
@@ -565,22 +565,24 @@ int main( int argc, char **argv )
 	}
 	while ( !finished )
 	{
+not_finished:
 		rc = ldap_result( ld, msgid, LDAP_MSG_ONE, &zerotime, &res );
 		//if(debug) fprintf(stderr, "rc: %d\n", rc);
-		
+
 		switch( rc ) {
 			case -1:
 				fprintf( stderr, "ldap_result: %s\n", ldap_err2string( rc ) );
 				return( 1 );
 			case 0:
-				if(debug) fprintf(stderr, "Line: %d - Break\n", __LINE__);
-				break;
+				if(debug) fprintf(stderr, "File: %s, Line: %d - Break - Possible Mem Leak created.\n", __FILE__, __LINE__);
+				goto not_finished;
+				//break;
 
 			/* If the result was an entry found by the search, get and print the attributes and values of the entry. */
 
 			case LDAP_RES_SEARCH_ENTRY:
 				if(debug) fputs("LDAP_RES_SEARCH_ENTRY\n", stderr);
-				
+
 				num_entries++;
 
 				/* Get and print the DN of the entry. */
@@ -613,9 +615,9 @@ int main( int argc, char **argv )
 					header_printed = true;
 					//ber_free( ber, 0 );
 				}
-				
+
 				first_in_row = true;
-				//for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {	
+				//for (char *a = ldap_first_attribute( ld, res, &ber ); a != NULL; a = ldap_next_attribute( ld, res, ber ) ) {
 				for(char ** a = attributes_array; *a != NULL; *a++) {
 					if(first_in_row) first_in_row = false;
 					else fputs(quot_str->attribute_delimiter, stream);
@@ -630,14 +632,14 @@ int main( int argc, char **argv )
 						fputs(quoted_val, stream);
 						continue;
 					}
-					
+
 					struct berval **vals = NULL;
-					
+
 					//if((vals = ldap_get_values_len(ld, res, a)) != NULL)
 					if((vals = ldap_get_values_len(ld, res, *a)) != NULL)
 					{
 						bool first_in_array = true;
-						
+
 						if(debug) fprintf(stderr, "ldap_count_values_len(vals): %d\n", ldap_count_values_len(vals));
 						if(ldap_count_values_len(vals) == 0)
 						{
@@ -669,7 +671,7 @@ int main( int argc, char **argv )
 						if(debug) fprintf(stderr, "Nullstring found! Line: %d", __LINE__);
 						fputs(quot_str->null_string, stream);
 					}
-					
+
 					//ldap_memfree( a );
 
 				}
@@ -682,14 +684,14 @@ int main( int argc, char **argv )
 
 				//printf( "\n" );
 				fputs(LF, stream);
-				
+
 				free_ldap_message(&res);
 
 				break;
 
 			case LDAP_RES_SEARCH_REFERENCE:
 				if(debug) fputs("LDAP_RES_SEARCH_REFERENCE", stderr);
-				
+
 				num_refs++;
 
 				/* The server sent a search reference encountered during the search operation. */
@@ -744,7 +746,7 @@ int main( int argc, char **argv )
 				if ( rc != LDAP_SUCCESS ) {
 
 					fprintf( stderr, "ldap_search_ext: %s\n", ldap_err2string( rc ) );
-					
+
 					if ( error_msg != NULL) fprintf( stderr, "%s\n", error_msg );
 
 					/*if ( error_msg != NULL & *error_msg != '\0' ) {
@@ -770,7 +772,7 @@ int main( int argc, char **argv )
 						num_entries, num_refs );
 
 				}
-				
+
 				free_ldap_message(&res);
 
 				break;
