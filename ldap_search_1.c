@@ -567,7 +567,6 @@ int main( int argc, char **argv )
 	{
 not_finished:
 		rc = ldap_result( ld, msgid, LDAP_MSG_ONE, &zerotime, &res );
-		//if(debug) fprintf(stderr, "rc: %d\n", rc);
 
 		switch( rc ) {
 			case -1:
