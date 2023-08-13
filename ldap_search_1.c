@@ -38,7 +38,7 @@
 #define _cleanup_berval_ __attribute((cleanup(free_berval)))
 #define _cleanup_quote_strings_ __attribute((cleanup(free_quote_strings)))
 
-struct         timeval  zerotime = {.tv_sec = 0L, .tv_usec = 0L};
+struct timeval timeout_struct = {.tv_sec = 0L, .tv_usec = 0L};
 
 typedef struct {
 	char * attribute_delimiter;
@@ -259,7 +259,7 @@ char ** get_attributes_from_ldap(LDAP *ld, char * basedn, int scope, char * filt
 	}
 	while(!finished)
 	{
-		rc = ldap_result( ld, msgid, LDAP_MSG_ONE, &zerotime, &res );
+		rc = ldap_result( ld, msgid, LDAP_MSG_ONE, &timeout_struct, &res );
 		switch( rc ) {
 			case -1:
 				return( NULL );
@@ -320,7 +320,9 @@ int main( int argc, char **argv )
 	static int print_referals = false;
 
 	static int trim_strings = false;
-
+	
+	static int timeout = 10;
+	
 	bool first_in_row = false, header_printed = false;
 
 	int version, msgid, rc, parse_rc, finished = 0, msgtype, num_entries = 0, num_refs = 0;
@@ -368,6 +370,7 @@ int main( int argc, char **argv )
 			{"use_sasl", no_argument, &use_sasl, 1},
 			{"attributes_only", no_argument, &attributes_only, 1},
 			{"print_referals", no_argument, &print_referals, 1},
+			{"timeout", required_argument, 0, 0},
 			{"port", required_argument, 0, 0},
 			{"hostname", required_argument, 0, 0},
 			{"nullstring", required_argument, 0, 0},
@@ -393,6 +396,7 @@ int main( int argc, char **argv )
 			case 0:
 			{
 				char* oname = (char*)long_options[option_index].name;
+				if(!strcmp(oname, "timeout")) timeout = atoi(optarg);
 				if(!strcmp(oname, "port")) port = atoi(optarg);
 				if(!strcmp(oname, "hostname")) hostname = strdup(optarg);
 				if(!strcmp(oname, "uri")) uri = strdup(optarg);
@@ -443,6 +447,7 @@ int main( int argc, char **argv )
 		puts("--hostname=<hostname>: connect to host <hostname>");
 		puts("--port=<port>: connect to port <port>");
 		puts("--uri=<uri>: use <uri> as target");
+		puts("--timeout=<timeout>: set the timeout to <timeout> seconds");
 		puts("--basedn=<basedn>: use base dn <basedn>");
 		puts("--nullstring=<null>: define nullstring (Default:" DEFAULT_NULL ")");
 		puts("--print_header: print header of column");
@@ -478,6 +483,7 @@ int main( int argc, char **argv )
 	if(!trim_chars && trim_strings) trim_chars = strdup(DEFAULT_TRIM_CHARS);
 
 	if(uri == NULL) asprintf(&uri, "ldap://%s:%d", hostname, port);
+	timeout_struct.tv_sec = timeout;
 
 	/* Get a handle to an LDAP connection. */
 
@@ -566,7 +572,8 @@ int main( int argc, char **argv )
 	while ( !finished )
 	{
 not_finished:
-		rc = ldap_result( ld, msgid, LDAP_MSG_ONE, &zerotime, &res );
+		rc = ldap_result( ld, msgid, LDAP_MSG_ONE, &timeout_struct, &res );
+		if(debug) fprintf(stderr, "rc: %d\n", rc);
 
 		switch( rc ) {
 			case -1:
