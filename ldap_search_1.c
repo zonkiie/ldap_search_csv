@@ -227,6 +227,162 @@ bool add_to_unique_array(char *** array, char * value)
 	return true;
 }
 
+char * get_dse( LDAP *ld )
+
+{
+
+	int rc, i;
+
+	char *matched_msg = NULL, *error_msg = NULL;
+
+	LDAPMessage *result, *e;
+
+	BerElement *ber;
+
+	char *a;
+
+	char **vals;
+
+	char *attrs[3];
+	char *dse = NULL;
+	size_t size;
+	_cleanup_file_ FILE *stream = open_memstream (&dse, &size);
+
+	/* Verify that the connection handle is valid. */
+
+	if ( ld == NULL ) {
+
+		fprintf( stderr, "Invalid connection handle.\n" );
+
+		return( NULL );
+
+	}
+
+	/* Set automatic referral processing off. */
+
+	if ( ldap_set_option( ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF ) != 0 ) {
+
+		//rc = ldap_get_lderrno( ld, NULL, NULL );
+
+		fprintf( stderr, "ldap_set_option: %s\n", ldap_err2string( rc ) );
+
+		return( NULL );
+
+	}
+
+	/* Search for the root DSE. */
+
+	attrs[0] = "supportedControl";
+
+	attrs[1] = "supportedExtension";
+
+	attrs[2] = NULL;
+
+	rc = ldap_search_ext_s( ld, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0, NULL, NULL, NULL, 0, &result );
+
+	/* Check the search results. */
+
+	switch( rc ) {
+
+		/* If successful, the root DSE was found. */
+
+		case LDAP_SUCCESS:
+
+			break;
+
+		/* If the root DSE was not found, the server does not comply
+
+		with the LDAPv3 protocol. */
+
+		case LDAP_PARTIAL_RESULTS:
+
+		case LDAP_NO_SUCH_OBJECT:
+
+		case LDAP_OPERATIONS_ERROR:
+
+		case LDAP_PROTOCOL_ERROR:
+
+			printf( "LDAP server returned result code %d (%s).\n"
+
+			"This server does not support the LDAPv3 protocol.\n",
+
+			rc, ldap_err2string( rc ) );
+
+			return( NULL );
+
+		/* If any other value is returned, an error must have occurred. */
+
+		default:
+
+			fprintf( stderr, "ldap_search_ext_s: %s\n", ldap_err2string( rc ) );
+
+			return( NULL );
+
+	}
+
+	/* Since only one entry should have matched, get that entry. */
+
+	e = ldap_first_entry( ld, result );
+
+	if ( e == NULL ) {
+
+		fprintf( stderr, "ldap_search_ext_s: Unable to get root DSE.\n");
+
+		ldap_memfree( result );
+
+		return( NULL );
+
+	}
+
+	/* Iterate through each attribute in the entry. */
+
+	for ( a = ldap_first_attribute( ld, e, &ber ); a != NULL; a = ldap_next_attribute( ld, e, ber ) ) {
+
+	/* Print each value of the attribute. */
+
+		if ((vals = ldap_get_values( ld, e, a)) != NULL ) {
+
+			for ( i = 0; vals[i] != NULL; i++ ) {
+
+				fprintf(stream, "%s: %s\n", a, vals[i] );
+
+			}
+
+			/* Free memory allocated by ldap_get_values(). */
+
+			ldap_value_free( vals );
+
+		}
+
+		/* Free memory allocated by ldap_first_attribute(). */
+
+		ldap_memfree( a );
+
+	}
+
+	/* Free memory allocated by ldap_first_attribute(). */
+
+	if ( ber != NULL ) {
+
+		ber_free( ber, 0 );
+
+	}
+
+	fprintf(stream, "\n" );
+
+	/* Free memory allocated by ldap_search_ext_s(). */
+
+	ldap_msgfree( result );
+
+	ldap_unbind( ld );
+	fflush(stream);
+
+	return( dse );
+
+}
+
+
+
 char ** get_attributes_from_ldap(LDAP *ld, char * basedn, int scope, char * filter)
 {
 	int finished = 0, msgid = 0, i = 0;
@@ -323,6 +479,8 @@ int main( int argc, char **argv )
 	
 	static int timeout = 10;
 	
+	static int get_dn = 0;
+	
 	bool first_in_row = false, header_printed = false;
 
 	int version, msgid, rc, parse_rc, finished = 0, msgtype, num_entries = 0, num_refs = 0;
@@ -369,6 +527,7 @@ int main( int argc, char **argv )
 			{"no_output", no_argument, &no_output, 1},
 			{"use_sasl", no_argument, &use_sasl, 1},
 			{"attributes_only", no_argument, &attributes_only, 1},
+			{"get_dn", no_argument, &get_dn, 1},
 			{"print_referals", no_argument, &print_referals, 1},
 			{"timeout", required_argument, 0, 0},
 			{"port", required_argument, 0, 0},
@@ -451,6 +610,7 @@ int main( int argc, char **argv )
 		puts("--basedn=<basedn>: use base dn <basedn>");
 		puts("--nullstring=<null>: define nullstring (Default:" DEFAULT_NULL ")");
 		puts("--print_header: print header of column");
+		puts("--get_dn: get root dn and exit");
 		puts("--debug: print debug messages");
 		puts("--no_output: print no output (Usable for debugging)");
 		puts("--use_sasl: use sasl for connection (experimental!)");
@@ -492,6 +652,14 @@ int main( int argc, char **argv )
 		fprintf( stderr, "ldap_set_option: %s\n", ldap_err2string( rc ) );
 
 		return( 1 );
+	}
+	
+	if(get_dn)
+	{
+		_cleanup_cstr_ char * content = get_dse(ld);
+		puts(content);
+		return(0);
+		
 	}
 
 	version = LDAP_VERSION3;
@@ -776,6 +944,8 @@ not_finished:
 						"Search references returned: %d\n",
 
 						num_entries, num_refs );
+					
+					
 
 				}
 
