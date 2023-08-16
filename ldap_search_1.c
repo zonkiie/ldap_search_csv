@@ -246,7 +246,7 @@ char * get_dse( LDAP *ld )
 	char *attrs[3];
 	char *dse = NULL;
 	size_t size;
-	_cleanup_file_ FILE *stream = open_memstream (&dse, &size);
+	FILE *stream = open_memstream (&dse, &size);
 
 	/* Verify that the connection handle is valid. */
 
@@ -339,19 +339,22 @@ char * get_dse( LDAP *ld )
 	for ( a = ldap_first_attribute( ld, e, &ber ); a != NULL; a = ldap_next_attribute( ld, e, ber ) ) {
 
 	/* Print each value of the attribute. */
-
-		if ((vals = ldap_get_values( ld, e, a)) != NULL ) {
+		struct berval **vals = NULL;
+		//if ((vals = ldap_get_values( ld, e, a)) != NULL ) {
+		if ((vals = ldap_get_values_len( ld, e, a)) != NULL ) {
 
 			for ( i = 0; vals[i] != NULL; i++ ) {
 
-				fprintf(stream, "%s: %s\n", a, vals[i] );
+				fprintf(stream, "%s: %s\n", a, vals[i]->bv_val );
 
 			}
 
 			/* Free memory allocated by ldap_get_values(). */
 
-			ldap_value_free( vals );
-
+			//ldap_value_free( vals );
+			//free_carr_n(&vals);
+			ber_bvecfree(vals);
+			
 		}
 
 		/* Free memory allocated by ldap_first_attribute(). */
@@ -374,8 +377,11 @@ char * get_dse( LDAP *ld )
 
 	ldap_msgfree( result );
 
-	ldap_unbind( ld );
+	//ldap_unbind( ld );
+	//ldap_unbind_ext_s(ld, NULL, NULL);
 	fflush(stream);
+	fclose(stream);
+	stream = NULL;
 
 	return( dse );
 
