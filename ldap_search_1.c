@@ -246,7 +246,7 @@ char * get_dse( LDAP *ld )
 	char *attrs[4];
 	char *dse = NULL;
 	size_t size;
-	FILE *stream = open_memstream (&dse, &size);
+	_cleanup_file_ FILE *stream = open_memstream (&dse, &size);
 
 	/* Verify that the connection handle is valid. */
 
@@ -272,14 +272,18 @@ char * get_dse( LDAP *ld )
 
 	/* Search for the root DSE. */
 
-	attrs[0] = "supportedControl";
+	/*attrs[0] = "supportedControl";
 
 	attrs[1] = "supportedExtension";
 	
-	attrs[2] = NULL;
+	attrs[2] = "namingcontexts";
 
-	attrs[3] = NULL;
+	attrs[3] = NULL;*/
+	
+	attrs[0] = "namingcontexts";
 
+	attrs[1] = NULL;
+	
 	rc = ldap_search_ext_s( ld, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0, NULL, NULL, NULL, 0, &result );
 
 	/* Check the search results. */
@@ -342,19 +346,12 @@ char * get_dse( LDAP *ld )
 
 	/* Print each value of the attribute. */
 		struct berval **vals = NULL;
-		//if ((vals = ldap_get_values( ld, e, a)) != NULL ) {
 		if ((vals = ldap_get_values_len( ld, e, a)) != NULL ) {
-
 			for ( i = 0; vals[i] != NULL; i++ ) {
-
 				fprintf(stream, "%s: %s\n", a, vals[i]->bv_val );
-
 			}
 
 			/* Free memory allocated by ldap_get_values(). */
-
-			//ldap_value_free( vals );
-			//free_carr_n(&vals);
 			ber_bvecfree(vals);
 			
 		}
