@@ -243,7 +243,7 @@ char * get_dse( LDAP *ld )
 
 	char **vals;
 
-	char *attrs[3];
+	char *attrs[4];
 	char *dse = NULL;
 	size_t size;
 	FILE *stream = open_memstream (&dse, &size);
@@ -275,8 +275,10 @@ char * get_dse( LDAP *ld )
 	attrs[0] = "supportedControl";
 
 	attrs[1] = "supportedExtension";
-
+	
 	attrs[2] = NULL;
+
+	attrs[3] = NULL;
 
 	rc = ldap_search_ext_s( ld, "", LDAP_SCOPE_BASE, "(objectclass=*)", attrs, 0, NULL, NULL, NULL, 0, &result );
 
@@ -377,8 +379,6 @@ char * get_dse( LDAP *ld )
 
 	ldap_msgfree( result );
 
-	//ldap_unbind( ld );
-	//ldap_unbind_ext_s(ld, NULL, NULL);
 	fflush(stream);
 	fclose(stream);
 	stream = NULL;
