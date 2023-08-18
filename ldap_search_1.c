@@ -227,6 +227,7 @@ bool add_to_unique_array(char *** array, char * value)
 	return true;
 }
 
+/// Source from: https://docs.oracle.com/cd/E19957-01/817-6707/srvrinfo.html#wp37957
 char * get_dse( LDAP *ld )
 
 {
@@ -349,6 +350,7 @@ char * get_dse( LDAP *ld )
 		if ((vals = ldap_get_values_len( ld, e, a)) != NULL ) {
 			for ( i = 0; vals[i] != NULL; i++ ) {
 				fprintf(stream, "%s: %s\n", a, vals[i]->bv_val );
+				//fprintf(stream, "%s", vals[i]->bv_val );
 			}
 
 			/* Free memory allocated by ldap_get_values(). */
