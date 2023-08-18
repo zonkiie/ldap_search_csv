@@ -229,7 +229,6 @@ bool add_to_unique_array(char *** array, char * value)
 
 /// Source from: https://docs.oracle.com/cd/E19957-01/817-6707/srvrinfo.html#wp37957
 char * get_dse( LDAP *ld )
-
 {
 
 	int rc, i;
@@ -263,7 +262,6 @@ char * get_dse( LDAP *ld )
 
 	if ( ldap_set_option( ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF ) != 0 ) {
 
-		//rc = ldap_get_lderrno( ld, NULL, NULL );
 
 		fprintf( stderr, "ldap_set_option: %s\n", ldap_err2string( rc ) );
 
@@ -273,14 +271,6 @@ char * get_dse( LDAP *ld )
 
 	/* Search for the root DSE. */
 
-	/*attrs[0] = "supportedControl";
-
-	attrs[1] = "supportedExtension";
-	
-	attrs[2] = "namingcontexts";
-
-	attrs[3] = NULL;*/
-	
 	attrs[0] = "namingcontexts";
 
 	attrs[1] = NULL;
