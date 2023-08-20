@@ -36,6 +36,7 @@
 #define _cleanup_file_ __attribute((cleanup(free_file)))
 #define _cleanup_carr_ __attribute((cleanup(free_carr_n)))
 #define _cleanup_berval_ __attribute((cleanup(free_berval)))
+#define _cleanup_ldap_memfree_ __attribute((cleanup(free_ldap_memfree)))
 #define _cleanup_quote_strings_ __attribute((cleanup(free_quote_strings)))
 
 struct timeval timeout_struct = {.tv_sec = 0L, .tv_usec = 0L};
@@ -75,6 +76,13 @@ void free_ldap_message(LDAPMessage **message)
 	if(*message == NULL || message == NULL) return;
 	ldap_msgfree(*message);
 	*message = NULL;
+}
+
+void free_ldap_memfree(char ** str)
+{
+	if(*str == NULL) return;
+	ldap_memfree(*str);
+	*str = NULL;
 }
 
 int get_carr_size(char ** carr)
@@ -233,18 +241,15 @@ char * get_dse( LDAP *ld )
 
 	int rc, i;
 
-	char *matched_msg = NULL, *error_msg = NULL;
+	char *matched_msg = NULL, *error_msg = NULL, *a = NULL, *dse = NULL;
 
 	LDAPMessage *result, *e;
 
 	BerElement *ber;
 
-	char *a;
-
 	char **vals;
 
 	char *attrs[4];
-	char *dse = NULL;
 	size_t size;
 	_cleanup_file_ FILE *stream = open_memstream (&dse, &size);
 
@@ -756,11 +761,8 @@ not_finished:
 
 				/* Get and print the DN of the entry. */
 
-				_cleanup_cstr_ char *entrydn = NULL;
-				if((dn = ldap_get_dn(ld, res)) != NULL) {
-					entrydn = strdup(dn);
-					ldap_memfree(dn);
-				}
+				/*_cleanup_cstr_ char *entrydn = NULL; */
+				_cleanup_ldap_memfree_ char *entrydn = ldap_get_dn(ld, res);
 
 				if (debug && entrydn != NULL) {
 
