@@ -504,6 +504,7 @@ int main( int argc, char **argv )
 	_cleanup_cstr_ char *attributes = NULL;
 	_cleanup_cstr_ char *uri = NULL;
 	_cleanup_cstr_ char *trim_chars = NULL;
+	_cleanup_ldap_memfree_ char *entrydn = NULL;
 	_cleanup_berval_ struct berval *berval_password = NULL;
 
 	_cleanup_quote_strings_ quote_strings *quot_str = (quote_strings*)calloc(1, sizeof(quote_strings));
@@ -517,7 +518,7 @@ int main( int argc, char **argv )
 	_cleanup_file_ FILE *stream = open_memstream (&buf, &size);
 
 
-	char *dn, *matched_msg = NULL, *error_msg = NULL;
+	char *matched_msg = NULL, *error_msg = NULL;
 
 	while(1)
 	{
@@ -762,7 +763,8 @@ not_finished:
 				/* Get and print the DN of the entry. */
 
 				/*_cleanup_cstr_ char *entrydn = NULL; */
-				_cleanup_ldap_memfree_ char *entrydn = ldap_get_dn(ld, res);
+				//_cleanup_ldap_memfree_ char *entrydn = ldap_get_dn(ld, res);
+				entrydn = ldap_get_dn(ld, res);
 
 				if (debug && entrydn != NULL) {
 
@@ -854,6 +856,9 @@ not_finished:
 				}*/
 
 				//printf( "\n" );
+				
+				free_ldap_memfree(&entrydn);
+				
 				fputs(LF, stream);
 
 				free_ldap_message(&res);
