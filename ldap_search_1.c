@@ -881,7 +881,7 @@ not_finished:
 
 					if ( parse_rc != LDAP_SUCCESS ) {
 
-						fprintf( stderr, "ldap_parse_result: %s\n", ldap_err2string( parse_rc ) );
+						fprintf( stderr, "ldap_parse_reference: %s\n", ldap_err2string( parse_rc ) );
 
 						return( 1 );
 
@@ -900,6 +900,7 @@ not_finished:
 				break;
 
 			case LDAP_RES_SEARCH_RESULT:
+			// Search successfully finished
 				if(debug) fputs("LDAP_RES_SEARCH_RESULT\n", stderr);
 				finished = 1;
 
