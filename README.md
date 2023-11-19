@@ -11,3 +11,11 @@ Read Schema Information:
 Needed libs:
 -libsasl2-dev (for ldap cleanup reasons)
 -libldap2-dev
+
+Fetch LDAP Structure
+
+    BASEPARAMS="-H ldap://${HOSTNAME} -D ${USERNAME} -w ${PASSWORD}"
+    SEARCHBASE="cn=subschema"
+    FILTER="(objectClass=subschema)"
+    FETCHATTRIBUTES="objectclasses attributetypes subschemasubentry"
+    ldapsearch ${BASEPARAMS} -s base -b ${SEARCHBASE} ${FILTER} ${FETCHATTRIBUTES}
