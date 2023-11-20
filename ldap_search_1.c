@@ -491,7 +491,8 @@ int main( int argc, char **argv )
 
 	LDAPMessage *msg = NULL;
 
-	LDAPControl **serverctrls;
+	LDAPControl **serverctrls = NULL;
+	LDAPControl **clientctrls = NULL;
 
 	BerElement *ber;
 
@@ -717,7 +718,7 @@ int main( int argc, char **argv )
 	}
 
 	/* Perform the search operation. */
-	rc = ldap_search_ext( ld, basedn, scope, filter, attributes_array, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &msgid );
+	rc = ldap_search_ext( ld, basedn, scope, filter, attributes_array, 0, serverctrls, clientctrls, NULL, LDAP_NO_LIMIT, &msgid );
 
 	if ( rc != LDAP_SUCCESS ) {
 
