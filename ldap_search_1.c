@@ -493,6 +493,7 @@ int main( int argc, char **argv )
 
 	LDAPControl **serverctrls = NULL;
 	LDAPControl **clientctrls = NULL;
+	LDAPControl	*tmpc = NULL;
 
 	BerElement *ber;
 
@@ -970,6 +971,12 @@ not_finished:
 	//if(!no_output) fwrite(buf, sizeof(char*), size, stdout);
 	if(!no_output) printf("%s", buf);
 
+	if( serverctrls ) 
+		ldap_controls_free(serverctrls);
+	
+	if( clientctrls )
+		ldap_controls_free(clientctrls);
+	
 	/* Disconnect when done. */
 
 	return( 0 );
