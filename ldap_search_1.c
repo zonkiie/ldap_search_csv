@@ -717,6 +717,17 @@ int main( int argc, char **argv )
 			exit(0);
 		}
 	}
+	
+	/*
+	 rc = ldap_set_option( ld, LDAP_OPT_SERVER_CONTROLS, serverctrls );
+	 
+	if( rc != LDAP_SUCCESS ) {
+		
+		fprintf( stderr, "ldap_set_option failed: %s\n", ldap_err2string( rc ) );
+		
+		return 1;
+	}
+	*/
 
 	/* Perform the search operation. */
 	rc = ldap_search_ext( ld, basedn, scope, filter, attributes_array, 0, serverctrls, clientctrls, NULL, LDAP_NO_LIMIT, &msgid );
