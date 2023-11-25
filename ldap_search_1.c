@@ -719,6 +719,9 @@ int main( int argc, char **argv )
 	}
 	
 	/*
+	 serverctrls = malloc( sizeof( LDAPControl ) * 1 );
+	serverctrls[0]->ldctl_oid = LDAP_CONTROL_SUBENTRIES;	 
+	 
 	 rc = ldap_set_option( ld, LDAP_OPT_SERVER_CONTROLS, serverctrls );
 	 
 	if( rc != LDAP_SUCCESS ) {
