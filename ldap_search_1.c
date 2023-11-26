@@ -718,16 +718,20 @@ int main( int argc, char **argv )
 		}
 	}
 	
-	/*
 	tmpc = (LDAPControl*)malloc( sizeof( LDAPControl ));
 	tmpc->ldctl_oid = LDAP_CONTROL_SUBENTRIES;	
-	tmpc->ldctl_iscritical = LDAP_OPT_OFF;
+	tmpc->ldctl_iscritical = 1;
+	ber = ber_alloc_t(LBER_USE_DER);
+	ber_printf( ber, "b", 1);
+	ber_flatten2( ber, &(tmpc->ldctl_value), 1 );
+	ber_free( ber, 1 );
+	
 	serverctrls = (LDAPControl**)malloc( sizeof( LDAPControl* ) * 2);
 	serverctrls[0] = tmpc;
 	serverctrls[1] = NULL;
 	fprintf(stderr, "Line: %d\n", __LINE__);
 	 
-	 rc = ldap_set_option( ld, LDAP_OPT_SERVER_CONTROLS, &serverctrls );
+	 rc = ldap_set_option( ld, LDAP_OPT_SERVER_CONTROLS, serverctrls );
 	fprintf(stderr, "Line: %d\n", __LINE__);
 	 
 	if( rc != LDAP_SUCCESS ) {
@@ -736,7 +740,7 @@ int main( int argc, char **argv )
 		
 		return 1;
 	}
-	*/
+	
 
 	/* Perform the search operation. */
 	rc = ldap_search_ext( ld, basedn, scope, filter, attributes_array, 0, serverctrls, clientctrls, NULL, LDAP_NO_LIMIT, &msgid );
