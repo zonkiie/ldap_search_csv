@@ -719,10 +719,16 @@ int main( int argc, char **argv )
 	}
 	
 	/*
-	 serverctrls = malloc( sizeof( LDAPControl ) * 1 );
-	serverctrls[0]->ldctl_oid = LDAP_CONTROL_SUBENTRIES;	 
+	tmpc = (LDAPControl*)malloc( sizeof( LDAPControl ));
+	tmpc->ldctl_oid = LDAP_CONTROL_SUBENTRIES;	
+	tmpc->ldctl_iscritical = LDAP_OPT_OFF;
+	serverctrls = (LDAPControl**)malloc( sizeof( LDAPControl* ) * 2);
+	serverctrls[0] = tmpc;
+	serverctrls[1] = NULL;
+	fprintf(stderr, "Line: %d\n", __LINE__);
 	 
-	 rc = ldap_set_option( ld, LDAP_OPT_SERVER_CONTROLS, serverctrls );
+	 rc = ldap_set_option( ld, LDAP_OPT_SERVER_CONTROLS, &serverctrls );
+	fprintf(stderr, "Line: %d\n", __LINE__);
 	 
 	if( rc != LDAP_SUCCESS ) {
 		
