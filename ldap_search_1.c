@@ -381,7 +381,18 @@ char * get_dse( LDAP *ld )
 
 }
 
-
+char * get_schema_from_ldap(LDAP *ld)
+{
+	/*
+	int finished = 0;
+	char **attributes_array = (char**)calloc(sizeof(char*), 512);
+	_cleanup_cstr_ char *matched_msg = NULL, *error_msg = NULL;
+	_cleanup_ldap_message_ LDAPMessage *res = NULL;
+	BerElement *ber;
+	*/
+	
+	return null;
+}
 
 char ** get_attributes_from_ldap(LDAP *ld, char * basedn, int scope, char * filter)
 {
