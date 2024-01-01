@@ -391,7 +391,7 @@ char * get_schema_from_ldap(LDAP *ld)
 	BerElement *ber;
 	*/
 	
-	return null;
+	return NULL;
 }
 
 char ** get_attributes_from_ldap(LDAP *ld, char * basedn, int scope, char * filter)
