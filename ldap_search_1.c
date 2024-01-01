@@ -963,12 +963,6 @@ not_finished:
 
 					if ( error_msg != NULL) fprintf( stderr, "%s\n", error_msg );
 
-					/*if ( error_msg != NULL & *error_msg != '\0' ) {
-
-						fprintf( stderr, "%s\n", error_msg );
-
-					}*/
-
 					if ( matched_msg != NULL && *matched_msg != '\0' ) {
 
 						fprintf( stderr, "Part of the DN that matches an existing entry: %s\n", matched_msg );

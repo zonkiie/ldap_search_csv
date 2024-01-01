@@ -514,11 +514,7 @@ int main( int argc, char **argv )
 
 					fprintf( stderr, "ldap_search_ext: %s\n", ldap_err2string( rc ) );
 
-					if ( error_msg != NULL & *error_msg != '\0' ) {
-
-						fprintf( stderr, "%s\n", error_msg );
-
-					}
+					if ( error_msg != NULL) fprintf( stderr, "%s\n", error_msg );
 
 					if ( matched_msg != NULL && *matched_msg != '\0' ) {
 
