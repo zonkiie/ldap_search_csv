@@ -29,6 +29,8 @@
 #define DEFAULT_NULL "(null)"
 #define DEFAULT_TRIM_CHARS " \r\n"
 
+#define SCHEMA_DN "cn=subschema"
+
 #define _cleanup_cstr_ __attribute((cleanup(free_cstr)))
 #define _cleanup_ldap_ __attribute((cleanup(free_ldap)))
 #define _cleanup_ldap_message_ __attribute((cleanup(free_ldap_message)))
@@ -390,8 +392,76 @@ char * get_schema_from_ldap(LDAP *ld)
 	_cleanup_ldap_message_ LDAPMessage *res = NULL;
 	BerElement *ber;
 	*/
+	int rc;
+	size_t size;
+	char *a = NULL, *content = NULL;
+	FILE *stream = open_memstream (&content, &size);
+	LDAPMessage *e;
+	struct timeval timeout_struct = {.tv_sec = 10L, .tv_usec = 0L};
+
+	char * base_dn = NULL;
+	base_dn = strdupa(SCHEMA_DN);
 	
-	return NULL;
+	fprintf(stderr, "Base DN: %s\n", base_dn);
+
+	// Hole das Schema
+	LDAPMessage *schema = NULL;
+	rc = ldap_search_ext_s(
+		ld,
+		base_dn,
+		LDAP_SCOPE_BASE,
+		"(objectClass=*)",
+		(char*[]){ NULL },
+		0,
+		NULL,
+		NULL,
+		&timeout_struct,
+		1000000,
+		&schema );
+	
+	//rc = ldap_search_s(ld, "cn=schema", LDAP_SCOPE_BASE, "(objectClass=*)", NULL, 0, &schema);
+	if (rc != LDAP_SUCCESS) {
+		if (rc == LDAP_NO_SUCH_OBJECT) {
+            fprintf(stderr, "Das Schema-Objekt '%s' wurde nicht gefunden.\n", base_dn);
+        }
+		fprintf(stderr, "Fehler beim Suchen des Schemas: %s\n", ldap_err2string(rc));
+		ldap_unbind_ext_s(ld, NULL, NULL);
+		return 1;
+	}
+	
+	LDAPMessage *entry;
+    for (entry = ldap_first_entry(ld, schema); entry != NULL; entry = ldap_next_entry(ld, entry)) {
+		BerElement *ber;
+		for ( a = ldap_first_attribute( ld, entry, &ber ); a != NULL; a = ldap_next_attribute( ld, entry, ber ) ) {
+			struct berval **vals = NULL;
+			if ((vals = ldap_get_values_len( ld, entry, a)) != NULL ) {
+				for (int i = 0; vals[i] != NULL; i++ ) {
+					fprintf(stream, "%s: %s\n", a, vals[i]->bv_val );
+				}
+
+				ber_bvecfree(vals);
+			}
+			ldap_memfree( a );
+
+		}
+		if ( ber != NULL ) {
+
+			ber_free( ber, 0 );
+
+		}
+
+		fprintf(stream, "\n" );
+		
+    }
+   	fflush(stream);
+	fclose(stream);
+	stream = NULL;
+
+	// Aufräumen
+	ldap_msgfree(schema);
+	//ldap_unbind_ext_s(ld, NULL, NULL);
+
+	return content;
 }
 
 char ** get_attributes_from_ldap(LDAP *ld, char * basedn, int scope, char * filter)
@@ -492,6 +562,8 @@ int main( int argc, char **argv )
 	
 	static int get_dn = 0;
 	
+	static int get_schema = 0;
+	
 	bool first_in_row = false, header_printed = false;
 
 	int version, msgid, rc, parse_rc, finished = 0, msgtype, num_entries = 0, num_refs = 0;
@@ -542,6 +614,7 @@ int main( int argc, char **argv )
 			{"use_sasl", no_argument, &use_sasl, 1},
 			{"attributes_only", no_argument, &attributes_only, 1},
 			{"get_dn", no_argument, &get_dn, 1},
+			{"get_schema", no_argument, &get_schema, 1},
 			{"print_referals", no_argument, &print_referals, 1},
 			{"timeout", required_argument, 0, 0},
 			{"port", required_argument, 0, 0},
@@ -625,6 +698,7 @@ int main( int argc, char **argv )
 		puts("--nullstring=<null>: define nullstring (Default:" DEFAULT_NULL ")");
 		puts("--print_header: print header of column");
 		puts("--get_dn: get root dn and exit");
+		puts("--get_schema: get schema and exit");
 		puts("--debug: print debug messages");
 		puts("--no_output: print no output (Usable for debugging)");
 		puts("--use_sasl: use sasl for connection (experimental!)");
@@ -674,6 +748,13 @@ int main( int argc, char **argv )
 		puts(content);
 		return(0);
 		
+	}
+	
+	if(get_schema)
+	{
+		_cleanup_cstr_ char * content = get_schema_from_ldap(ld);
+		puts(content);
+		return 0;
 	}
 
 	version = LDAP_VERSION3;
