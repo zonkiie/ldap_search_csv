@@ -29,8 +29,6 @@
 #define DEFAULT_NULL "(null)"
 #define DEFAULT_TRIM_CHARS " \r\n"
 
-#define SCHEMA_DN "cn=subschema"
-
 #define _cleanup_cstr_ __attribute((cleanup(free_cstr)))
 #define _cleanup_ldap_ __attribute((cleanup(free_ldap)))
 #define _cleanup_ldap_message_ __attribute((cleanup(free_ldap_message)))
@@ -40,6 +38,8 @@
 #define _cleanup_berval_ __attribute((cleanup(free_berval)))
 #define _cleanup_ldap_memfree_ __attribute((cleanup(free_ldap_memfree)))
 #define _cleanup_quote_strings_ __attribute((cleanup(free_quote_strings)))
+
+char schema_dn[64];
 
 struct timeval timeout_struct = {.tv_sec = 0L, .tv_usec = 0L};
 
@@ -390,7 +390,6 @@ char * get_schema_from_ldap(LDAP *ld)
 	char **attributes_array = (char**)calloc(sizeof(char*), 512);
 	_cleanup_cstr_ char *matched_msg = NULL, *error_msg = NULL;
 	_cleanup_ldap_message_ LDAPMessage *res = NULL;
-	BerElement *ber;
 	*/
 	int rc;
 	size_t size;
@@ -400,7 +399,7 @@ char * get_schema_from_ldap(LDAP *ld)
 	struct timeval timeout_struct = {.tv_sec = 10L, .tv_usec = 0L};
 
 	char * base_dn = NULL;
-	base_dn = strdupa(SCHEMA_DN);
+	base_dn = strdupa(schema_dn);
 	
 	fprintf(stderr, "Base DN: %s\n", base_dn);
 
@@ -602,6 +601,8 @@ int main( int argc, char **argv )
 
 	_cleanup_file_ FILE *stream = open_memstream (&buf, &size);
 
+	// default schema dn
+	strcpy(schema_dn, "cn=subschema");
 
 	char *matched_msg = NULL, *error_msg = NULL;
 
@@ -615,6 +616,7 @@ int main( int argc, char **argv )
 			{"attributes_only", no_argument, &attributes_only, 1},
 			{"get_dn", no_argument, &get_dn, 1},
 			{"get_schema", no_argument, &get_schema, 1},
+			{"schema_dn", required_argument, 0, 0},
 			{"print_referals", no_argument, &print_referals, 1},
 			{"timeout", required_argument, 0, 0},
 			{"port", required_argument, 0, 0},
@@ -656,6 +658,7 @@ int main( int argc, char **argv )
 				if(!strcmp(oname, "attributes")) attributes = strdup(optarg);
 				if(!strcmp(oname, "trim_chars")) trim_chars = strdup(optarg);
 				if(!strcmp(oname, "configfile")) configfile = strdup(optarg);
+				if(!strcmp(oname, "schema_dn")) strcpy(schema_dn, optarg);
 				if(!strcmp(oname, "scope"))
 				{
 					if(!strcasecmp(optarg, "LDAP_SCOPE_BASE") || !strcasecmp(optarg, "BASE")) scope = LDAP_SCOPE_BASE;
@@ -699,6 +702,7 @@ int main( int argc, char **argv )
 		puts("--print_header: print header of column");
 		puts("--get_dn: get root dn and exit");
 		puts("--get_schema: get schema and exit");
+		puts("--schema_dn=<schema_dn>: define schema dn for get_schema");
 		puts("--debug: print debug messages");
 		puts("--no_output: print no output (Usable for debugging)");
 		puts("--use_sasl: use sasl for connection (experimental!)");
