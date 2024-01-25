@@ -410,7 +410,7 @@ char * get_schema_from_ldap(LDAP *ld)
 		base_dn,
 		LDAP_SCOPE_BASE,
 		"(objectClass=*)",
-		(char*[]){ NULL },
+		(char*[]){ "attributeTypes", "objectClasses", NULL },   //(char*[]){ NULL },
 		0,
 		NULL,
 		NULL,
@@ -430,6 +430,9 @@ char * get_schema_from_ldap(LDAP *ld)
 	
 	LDAPMessage *entry;
     for (entry = ldap_first_entry(ld, schema); entry != NULL; entry = ldap_next_entry(ld, entry)) {
+		char* schema_entry_str = ldap_get_dn(ld, entry);
+		fprintf(stream, "Schema Entry: %s\n", schema_entry_str);
+		ldap_memfree(schema_entry_str);
 		BerElement *ber;
 		for ( a = ldap_first_attribute( ld, entry, &ber ); a != NULL; a = ldap_next_attribute( ld, entry, ber ) ) {
 			struct berval **vals = NULL;
