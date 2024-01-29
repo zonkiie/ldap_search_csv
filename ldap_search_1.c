@@ -40,6 +40,7 @@
 #define _cleanup_quote_strings_ __attribute((cleanup(free_quote_strings)))
 
 char schema_dn[64];
+char schema_filter[256];
 
 struct timeval timeout_struct = {.tv_sec = 0L, .tv_usec = 0L};
 
@@ -398,8 +399,7 @@ char * get_schema_from_ldap(LDAP *ld)
 	LDAPMessage *e;
 	struct timeval timeout_struct = {.tv_sec = 10L, .tv_usec = 0L};
 
-	char * base_dn = NULL;
-	base_dn = strdupa(schema_dn);
+	char * base_dn = strdupa(schema_dn);
 	
 	fprintf(stderr, "Base DN: %s\n", base_dn);
 
@@ -409,8 +409,8 @@ char * get_schema_from_ldap(LDAP *ld)
 		ld,
 		base_dn,
 		LDAP_SCOPE_BASE,
-		"(objectClass=*)",
-		(char*[]){ "attributeTypes", "objectClasses", NULL },   //(char*[]){ NULL },
+		schema_filter, //"(objectClass=*)",
+		(char*[]){ "objectClasses", NULL }, // (char*[]){ "attributeTypes", "objectClasses", NULL },   //(char*[]){ NULL },
 		0,
 		NULL,
 		NULL,
@@ -425,7 +425,7 @@ char * get_schema_from_ldap(LDAP *ld)
         }
 		fprintf(stderr, "Fehler beim Suchen des Schemas: %s\n", ldap_err2string(rc));
 		ldap_unbind_ext_s(ld, NULL, NULL);
-		return 1;
+		return NULL;
 	}
 	
 	LDAPMessage *entry;
@@ -606,6 +606,7 @@ int main( int argc, char **argv )
 
 	// default schema dn
 	strcpy(schema_dn, "cn=subschema");
+	strcpy(schema_filter, "(objectClass=*)");
 
 	char *matched_msg = NULL, *error_msg = NULL;
 
@@ -620,6 +621,7 @@ int main( int argc, char **argv )
 			{"get_dn", no_argument, &get_dn, 1},
 			{"get_schema", no_argument, &get_schema, 1},
 			{"schema_dn", required_argument, 0, 0},
+			{"schema_filter", required_argument, 0, 0},
 			{"print_referals", no_argument, &print_referals, 1},
 			{"timeout", required_argument, 0, 0},
 			{"port", required_argument, 0, 0},
@@ -662,6 +664,7 @@ int main( int argc, char **argv )
 				if(!strcmp(oname, "trim_chars")) trim_chars = strdup(optarg);
 				if(!strcmp(oname, "configfile")) configfile = strdup(optarg);
 				if(!strcmp(oname, "schema_dn")) strcpy(schema_dn, optarg);
+				if(!strcmp(oname, "schema_filter")) strcpy(schema_filter, optarg);
 				if(!strcmp(oname, "scope"))
 				{
 					if(!strcasecmp(optarg, "LDAP_SCOPE_BASE") || !strcasecmp(optarg, "BASE")) scope = LDAP_SCOPE_BASE;
@@ -706,6 +709,7 @@ int main( int argc, char **argv )
 		puts("--get_dn: get root dn and exit");
 		puts("--get_schema: get schema and exit");
 		puts("--schema_dn=<schema_dn>: define schema dn for get_schema");
+		puts("--schema_filter=<schema_filter>: define schema filter");
 		puts("--debug: print debug messages");
 		puts("--no_output: print no output (Usable for debugging)");
 		puts("--use_sasl: use sasl for connection (experimental!)");
