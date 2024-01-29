@@ -439,6 +439,14 @@ char * get_schema_from_ldap(LDAP *ld)
 			if ((vals = ldap_get_values_len( ld, entry, a)) != NULL ) {
 				for (int i = 0; vals[i] != NULL; i++ ) {
 					fprintf(stream, "%s: %s\n", a, vals[i]->bv_val );
+					if(!strcmp(a, "objectClasses")) {
+						int oclass_error = 0;
+						char * oclass_error_text = NULL;
+						LDAPObjectClass *oclass = ldap_str2objectclass(vals[i]->bv_val, &code, &oclass_error_text, LDAP_SCHEMA_ALLOW_ALL);
+						
+						fprintf(stderr, "ObjectClass Details - Name: %s, Must Attributes: %s, May Attributes: %s\n", null, null, null);
+						ldap_objectclass_free(oclass);
+					}
 				}
 
 				ber_bvecfree(vals);
