@@ -155,6 +155,23 @@ int str_split(char ***dest, char *str, char *separator)
 	return index;
 }
 
+int str_join(char **targetstr, char **array, char *joinstr)
+{
+	int i = 0;
+	int size = 0;
+	int sl = strlen(joinstr);
+	(*targetstr) = (char*)calloc(strlen(array[0]) + 1, 1);
+	strcpy((*targetstr), array[0]);
+	while(array[i + 1] != NULL)
+	{
+		(*targetstr) = (char*)realloc(*targetstr, strlen(*targetstr) + strlen(array[i + 1]) + sl + 1);
+		strcat(*targetstr, joinstr);
+		strcat(*targetstr, array[i + 1]);
+		i++;
+	}
+	return(size);
+}
+
 void free_file(FILE** file)
 {
 	if(*file == NULL) return;
@@ -382,6 +399,11 @@ char * get_dse( LDAP *ld )
 
 	return( dse );
 
+}
+
+char * print_pretty_ldap_objectclass(LDAPObjectClass *oclass)
+{
+	
 }
 
 char * get_schema_from_ldap(LDAP *ld)
