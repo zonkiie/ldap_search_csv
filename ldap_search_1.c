@@ -7,6 +7,7 @@
 #include <malloc.h>
 #include <search.h>
 #include <ldap.h>
+#include <ldap_schema.h>
 #include <sasl/sasl.h>
 
 /* Change these as needed. */
@@ -401,9 +402,20 @@ char * get_dse( LDAP *ld )
 
 }
 
-char * print_pretty_ldap_objectclass(LDAPObjectClass *oclass)
+char * str_pretty_ldap_objectclass(LDAPObjectClass *oclass)
 {
+	if(oclass == NULL) return NULL;
+	char *result;
+	_cleanup_cstr_ char *oid = strdup(oclass->oc_oid);
+	_cleanup_cstr_ char *namestr = NULL;
+	_cleanup_cstr_ char *attr_must = NULL;
+	_cleanup_cstr_ char *attr_may = NULL;
+	if(oclass->oc_names != NULL) str_join(&namestr, oclass->oc_names, ",");
+	if(oclass->oc_at_oids_must != NULL) str_join(&attr_must, oclass->oc_at_oids_must, ",");
+	if(oclass->oc_at_oids_may != NULL) str_join(&attr_may, oclass->oc_at_oids_may, ",");
 	
+	asprintf(&result, "ObjectClass Details - ODI: %s, Name: %s, Must Attributes: %s, May Attributes: %s\n", oid, namestr, attr_must, attr_may);
+	return result;
 }
 
 char * get_schema_from_ldap(LDAP *ld)
@@ -463,10 +475,10 @@ char * get_schema_from_ldap(LDAP *ld)
 					fprintf(stream, "%s: %s\n", a, vals[i]->bv_val );
 					if(!strcmp(a, "objectClasses")) {
 						int oclass_error = 0;
-						char * oclass_error_text = NULL;
-						LDAPObjectClass *oclass = ldap_str2objectclass(vals[i]->bv_val, &code, &oclass_error_text, LDAP_SCHEMA_ALLOW_ALL);
-						
-						fprintf(stderr, "ObjectClass Details - Name: %s, Must Attributes: %s, May Attributes: %s\n", null, null, null);
+						const char * oclass_error_text;
+						LDAPObjectClass *oclass = ldap_str2objectclass(vals[i]->bv_val, &oclass_error, &oclass_error_text, LDAP_SCHEMA_ALLOW_ALL);
+						_cleanup_cstr_ char * ostr = str_pretty_ldap_objectclass(oclass);
+						if(ostr) fprintf(stream, "Pretty: %s\n", ostr);
 						ldap_objectclass_free(oclass);
 					}
 				}
