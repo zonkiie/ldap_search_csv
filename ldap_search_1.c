@@ -414,7 +414,7 @@ char * str_pretty_ldap_objectclass(LDAPObjectClass *oclass)
 	if(oclass->oc_at_oids_must != NULL) str_join(&attr_must, oclass->oc_at_oids_must, ",");
 	if(oclass->oc_at_oids_may != NULL) str_join(&attr_may, oclass->oc_at_oids_may, ",");
 	
-	asprintf(&result, "ObjectClass Details - ODI: %s, Name: %s, Must Attributes: %s, May Attributes: %s\n", oid, namestr, attr_must, attr_may);
+	asprintf(&result, "ObjectClass Details\nOID: %s\nName: %s\nMust Attributes: %s\nMay Attributes: %s\n", oid, namestr, attr_must, attr_may);
 	return result;
 }
 
