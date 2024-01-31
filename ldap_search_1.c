@@ -584,7 +584,9 @@ char *trim(char *string, char *trimchars)
 
 int main( int argc, char **argv )
 {
-	int port = LDAP_PORT, option_index = 0, c = 0, scope = -1;
+	int port = LDAP_PORT, option_index = 0, c = 0;
+	int scope = -1;
+	//int scope = LDAP_SCOPE_BASE;
 	// https://stackoverflow.com/questions/59462003/getopt-long-using-flag-struct-member
 	static int show_help = 0;
 
@@ -611,7 +613,6 @@ int main( int argc, char **argv )
 	bool first_in_row = false, header_printed = false;
 
 	int version, msgid, rc, parse_rc, finished = 0, msgtype, num_entries = 0, num_refs = 0;
-
 	_cleanup_ldap_ LDAP *ld = NULL;
 
 	_cleanup_ldap_message_ LDAPMessage *res = NULL;
