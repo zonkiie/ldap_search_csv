@@ -10,17 +10,8 @@
 #include <ldap_schema.h>
 #include <sasl/sasl.h>
 
-/* Change these as needed. */
-
 //https://www.forumsys.com/tutorials/integration-how-to/ldap/online-ldap-test-server/
 //https://git.openldap.org/openldap/openldap/-/tree/master/tests/progs
-// #define HOSTNAME "localhost"
-#define HOSTNAME "ldap.forumsys.com"
-
-#define PORTNUMBER LDAP_PORT
-#define PORTNUMBER_TLS LDAPS_PORT
-
-#define BASEDN "ou=mathematicians,dc=example,dc=com"
 
 #define FILTER "(objectClass=*)"
 // https://gist.github.com/syzdek/1459007/31d8fdf197655c8ff001c27b4c1085fb728652f9
@@ -769,8 +760,6 @@ int main( int argc, char **argv )
 	}
 
 	//initialize values with default values during testing
-	if(hostname == NULL) hostname = strdup(HOSTNAME);
-	if(basedn == NULL) basedn = strdup(BASEDN);
 	if(filter == NULL) filter = strdup(FILTER);
 	if(password != NULL) berval_password = ber_bvstrdup(password);
 	if(quot_str->null_string == NULL) quot_str->null_string = strdup(DEFAULT_NULL);
